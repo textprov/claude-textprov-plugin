@@ -1,0 +1,14 @@
+{
+  "name": "textprov-plugins",
+  "description": "TextProv plugins for Claude Code: attribution observations, inspection and explicit claims.",
+  "owner": { "name": "TextProv contributors", "url": "https://textprov.org" },
+  "plugins": [
+    {
+      "name": "textprov",
+      "source": "./",
+      "description": "Records prompt, Write/Edit and final-answer observations in the shared TextProv attribution chronicle and exposes /textprov for inspection, matching and explicit claims.",
+      "category": "provenance",
+      "tags": ["attribution", "provenance", "textprov"]
+    }
+  ]
+}
