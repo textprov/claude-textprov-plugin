@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register, ToolCallResult } from 'claude-code'
 
-import type { TextprovFailure, TextprovObservation } from '../types'
+import type { TextprovFailure, TextprovObservation, TextprovPending, TextprovTurn } from '../types'
 import { bridge } from './bridge'
 
 // Claude adapter for the shared TextProv chronicle. It records observations and
@@ -14,10 +14,14 @@ const ADAPTER = 'claude-textprov-plugin/0.1.0'
 const POLICY = 'claude-textprov-plugin/0.1.0'
 const COMMAND = 'textprov'
 const KEEP = 500
+/** The loop key of the main conversation in the `turns` map; subagents use their agent id. */
+const MAIN = 'main'
 
 const observations = atom({ plugin: 'textprov', key: 'observations' } as const, [] as TextprovObservation[])
 const failures = atom({ plugin: 'textprov', key: 'failures' } as const, [] as TextprovFailure[])
 const sequence = atom({ plugin: 'textprov', key: 'sequence' } as const, 0)
+const pending = atom({ plugin: 'textprov', key: 'pending' } as const, null as TextprovPending | null)
+const turns = atom({ plugin: 'textprov', key: 'turns' } as const, {} as Record<string, TextprovTurn>)
 
 type Visibility = 'structured' | 'model' | 'stored' | 'display'
 type Completeness = 'complete' | 'partial' | 'truncated' | 'unobserved'
@@ -99,6 +103,11 @@ async function observe(
   return row.id
 }
 
+/** The turn running in a loop, as turn.start reported it; undefined between turns. */
+async function runningTurn($: EngineInterface, agentId: string | undefined): Promise<TextprovTurn | undefined> {
+  return (await read($, turns))[agentId ?? MAIN]
+}
+
 type ToolEnvelope = { tool: string; tool_use_id: string; agentId?: string }
 
 /** Records a Write or Edit input before the tool runs, and its result after. */
@@ -109,20 +118,40 @@ async function captureTool(
   text: string,
   path: string,
   run: () => Promise<ToolCallResult>,
+  anchor?: string,
 ): Promise<ToolCallResult> {
-  const hostIds = { tool_call: e.tool_use_id, path }
+  const turn = await runningTurn($, e.agentId)
+  const hostIds = { tool_call: e.tool_use_id, path, ...(turn === undefined ? {} : { turn: turn.turnId }) }
   const common = { agentId: e.agentId, tool: e.tool, path }
-  const pending = observe($, options, {
-    key: `${e.tool_use_id}:call`,
-    kind: 'tool_call',
-    channel: 'assistant',
-    visibility: 'model',
-    text,
-    hostIds,
-    ...common,
-  })
+  const captures = [
+    observe($, options, {
+      key: `${e.tool_use_id}:call`,
+      kind: 'tool_call',
+      channel: 'assistant',
+      visibility: 'model',
+      text,
+      hostIds,
+      ...common,
+    }),
+  ]
+  // An Edit's old_string: text the assistant quoted from the file to place
+  // the edit. Recorded on its own so the attribution layer can tell anchor
+  // lines repeated in new_string from text the edit inserted.
+  if (anchor !== undefined) {
+    captures.push(
+      observe($, options, {
+        key: `${e.tool_use_id}:anchor`,
+        kind: 'tool_anchor',
+        channel: 'assistant',
+        visibility: 'model',
+        text: anchor,
+        hostIds,
+        ...common,
+      }),
+    )
+  }
   const ran = await run()
-  await pending
+  await Promise.all(captures)
   if (ran.deny !== undefined) {
     await observe($, options, {
       key: `${e.tool_use_id}:result`,
@@ -309,20 +338,48 @@ export const register: Register = (on, options) => {
   // A submission is observed as it enters the turn, after every rewrite above
   // and beneath. Slash commands and hidden prompts are not submissions. The key
   // carries the same number the record keeps as capture_sequence.
+  //
+  // The engine may start the turn inside `next(e)` (a headless run does), so
+  // the submission is announced as pending before `next`, and the turn that
+  // starts with its text claims it at turn.start, which may run before or after
+  // this hook resumes. The answer joins the submission through `prompt` either
+  // way; the submission records the turn only when it is already known here.
   on('prompt.submit', async ($, e, next) => {
-    const ran = await next(e)
-    if (e.command !== undefined || e.isMeta === true || ran.drop !== undefined) return ran
+    if (e.command !== undefined || e.isMeta === true) return next(e)
     const seq = await nextSequence($)
+    const key = `prompt:${seq}`
+    await update($, pending, () => ({ key, text: e.text }))
+    const ran = await next(e)
+    if (ran.drop !== undefined) {
+      await update($, pending, waiting => (waiting?.key === key ? null : waiting))
+      return ran
+    }
+    const started = await runningTurn($, undefined)
+    const turn = started?.submission === key ? started.turnId : e.turnId
     await observe($, options, {
-      key: `prompt:${seq}`,
+      key,
       kind: 'submission',
       channel: 'user',
       visibility: 'stored',
       text: ran.text,
-      hostIds: e.turnId === undefined ? {} : { turn: e.turnId },
+      hostIds: turn === undefined ? { prompt: key } : { prompt: key, turn },
       sequence: seq,
     })
     return ran
+  })
+
+  on('turn.start', async ($, e, next) => {
+    let submission: string | undefined
+    if (e.agentId === undefined) {
+      const waiting = await read($, pending)
+      if (waiting !== null && waiting.text.trim() === e.text.trim()) {
+        submission = waiting.key
+        await update($, pending, () => null)
+      }
+    }
+    const turn: TextprovTurn = { turnId: e.turnId, ...(submission === undefined ? {} : { submission }) }
+    await update($, turns, map => ({ ...map, [e.agentId ?? MAIN]: turn }))
+    return next(e)
   })
 
   on('tool.call', { tool: 'Write' }, ($, e, next) =>
@@ -330,13 +387,16 @@ export const register: Register = (on, options) => {
   )
 
   on('tool.call', { tool: 'Edit' }, ($, e, next) =>
-    captureTool($, options, e, e.new_string, e.file_path, () => next(e)),
+    captureTool($, options, e, e.new_string, e.file_path, () => next(e), e.old_string),
   )
 
   // The final answer as the engine reports it: display text, not the stored
   // row, so it is recorded with display visibility.
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
+    const loop = e.agentId ?? MAIN
+    const turn = (await read($, turns))[loop]
+    const started = turn !== undefined && turn.turnId === e.turnId ? turn : undefined
     if (e.answer !== '') {
       await observe($, options, {
         key: `turn:${e.turnId}:answer`,
@@ -345,8 +405,14 @@ export const register: Register = (on, options) => {
         visibility: 'display',
         text: e.answer,
         completeness: e.isAborted ? 'partial' : 'complete',
-        hostIds: { turn: e.turnId },
+        hostIds: started?.submission === undefined ? { turn: e.turnId } : { turn: e.turnId, prompt: started.submission },
         agentId: e.agentId,
+      })
+    }
+    if (started !== undefined) {
+      await update($, turns, map => {
+        const { [loop]: _, ...rest } = map
+        return rest
       })
     }
     return ran
