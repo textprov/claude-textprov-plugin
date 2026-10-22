@@ -1,3 +1,7 @@
+---
+README.md
+---
+
 # TextProv plugin for Claude Code
 
 A prototype Claude Code plugin that records attribution observations in the shared
