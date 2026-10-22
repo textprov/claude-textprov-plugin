@@ -77,7 +77,7 @@ test('a Write is observed as a call and a result joined by tool_call', async ($,
   expect(String(result!.delivery_key)).toBe(`${id}:result`)
 })
 
-test('the list command shows what was captured and the status command asks the bridge', async ($, on) => {
+test('the list command shows what was captured and the status command adds the plugin to the bridge report', async ($, on) => {
   const requests: Request[] = []
   engine(on, requests, request => (request.operation === 'status' ? { core: { available: true } } : undefined))
   await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true })
@@ -87,9 +87,15 @@ test('the list command shows what was captured and the status command asks the b
   expect(listed.text).toContain('1 observation this session')
   expect(listed.text).toContain('submission')
   expect(listed.text).toContain('obs-1'.slice(0, 8))
+  expect(listed.text!.startsWith('textprov')).toBe(false)
 
   const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
   expect(status.text).toContain('"available": true')
+  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.0"')
+  expect(status.text).toContain('"session_id": "session-test"')
+  expect(status.text).toContain('"host_version": "0.0.0-test"')
+  expect(status.text).toContain('"observations": 1')
+  expect(status.text).toContain('"failures": 0')
   expect(requests[requests.length - 1]!.operation).toBe('status')
 })
 

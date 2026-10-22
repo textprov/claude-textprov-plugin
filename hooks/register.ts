@@ -147,7 +147,7 @@ async function captureTool(
 
 const HELP = [
   '/textprov                      list this session\'s observations',
-  '/textprov status               bridge, core and database state',
+  '/textprov status               bridge, core, database and plugin state',
   '/textprov inspect <id>         metadata, ID joins and claims of one observation',
   '/textprov match <src> <dst>    exact occurrences of the source block in the target',
   '/textprov claim <id> <start> <end> <voice> [definition...]',
@@ -171,10 +171,12 @@ function pretty(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }
 
+// Command output is shown under the command's name, so none of it repeats "textprov:".
+
 async function listing($: EngineInterface): Promise<string> {
   const list = await read($, observations)
   const failed = await read($, failures)
-  const lines = [`textprov: ${list.length} observation${list.length === 1 ? '' : 's'} this session`]
+  const lines = [`${list.length} observation${list.length === 1 ? '' : 's'} this session`]
   for (const one of list) {
     const where = one.path !== undefined ? ` ${one.path}` : ''
     const agent = one.agentId !== undefined ? ` agent=${one.agentId}` : ''
@@ -190,6 +192,23 @@ async function listing($: EngineInterface): Promise<string> {
   return lines.join('\n')
 }
 
+/** What the bridge cannot know: this plugin, this host, this session and its capture state. */
+async function pluginStatus($: EngineInterface): Promise<Record<string, unknown>> {
+  const list = await read($, observations)
+  const failed = await read($, failures)
+  const host = await $.session.version()
+  return {
+    adapter: ADAPTER,
+    policy_version: POLICY,
+    host_version: host.version,
+    session_id: await $.session.id(),
+    sequence: await read($, sequence),
+    observations: list.length,
+    failures: failed.length,
+    ...(failed.length === 0 ? {} : { last_failure: failed[failed.length - 1]!.error }),
+  }
+}
+
 async function runCommand($: EngineInterface, options: PluginOptions, args: string): Promise<string> {
   const words = args.trim().split(/\s+/).filter(word => word !== '')
   const verb = words[0] ?? 'list'
@@ -200,13 +219,16 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
       return HELP
     case 'status': {
       const ran = await bridge($, options, { operation: 'status' })
-      return ran.ok ? `textprov status\n${pretty(ran.result)}` : `textprov: bridge failed: ${ran.error}`
+      const plugin = await pluginStatus($)
+      if (!ran.ok) return pretty({ bridge_error: ran.error, plugin })
+      const report = ran.result !== null && typeof ran.result === 'object' ? ran.result : { result: ran.result }
+      return pretty({ ...report, plugin })
     }
     case 'inspect': {
       if (words[1] === undefined) return 'usage: /textprov inspect <id>'
       const id = await resolve($, words[1])
       const ran = await bridge($, options, { operation: 'inspect', observation_id: id })
-      return ran.ok ? pretty(ran.result) : `textprov: ${ran.error}`
+      return ran.ok ? pretty(ran.result) : ran.error
     }
     case 'match': {
       if (words[1] === undefined || words[2] === undefined) return 'usage: /textprov match <source-id> <target-id>'
@@ -215,7 +237,7 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
         source_id: await resolve($, words[1]),
         target_id: await resolve($, words[2]),
       })
-      return ran.ok ? pretty(ran.result) : `textprov: ${ran.error}`
+      return ran.ok ? pretty(ran.result) : ran.error
     }
     case 'claim': {
       const [, given, start, end, voice, ...rest] = words
@@ -224,9 +246,9 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
       }
       const id = await resolve($, given)
       const info = await bridge($, options, { operation: 'inspect', observation_id: id })
-      if (!info.ok) return `textprov: ${info.error}`
+      if (!info.ok) return info.error
       const hash = (info.result as { content_hash?: unknown }).content_hash
-      if (typeof hash !== 'string') return 'textprov: that observation has no content hash; nothing can be claimed on it'
+      if (typeof hash !== 'string') return 'that observation has no content hash; nothing can be claimed on it'
       const ran = await bridge($, options, {
         operation: 'claim',
         observation_id: id,
@@ -240,10 +262,10 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
         policy_version: POLICY,
         supporting_ids: [],
       })
-      return ran.ok ? `claim ${String(ran.result)} recorded on ${short(id)} [${start}, ${end}) for ${voice}` : `textprov: ${ran.error}`
+      return ran.ok ? `claim ${String(ran.result)} recorded on ${short(id)} [${start}, ${end}) for ${voice}` : ran.error
     }
     default:
-      return `textprov: unknown subcommand "${verb}"\n${HELP}`
+      return `unknown subcommand "${verb}"\n${HELP}`
   }
 }
 
@@ -261,7 +283,7 @@ export const register: Register = (on, options) => {
     try {
       return { text: await runCommand($, options, e.args) }
     } catch (error) {
-      return { text: `textprov: ${error instanceof Error ? error.message : String(error)}` }
+      return { text: error instanceof Error ? error.message : String(error) }
     }
   })
 
