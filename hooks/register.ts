@@ -224,14 +224,24 @@ async function captureTool(
   return ran
 }
 
+const CLAIM_USAGE = [
+  'usage: /textprov claim <id> <start> <end> <voice-id> [definition...]',
+  '  records that scalars [start, end) of the observation belong to a voice.',
+  '  start and end count Unicode scalars from 0, end excluded, on grapheme boundaries;',
+  '  inspect shows scalar_length. voice-id is a TextProv voice such as Voice1;',
+  '  Voice0 is unattributed text and needs no claim. The definition says who the voice is.',
+  '  example: /textprov claim 5410ad26 0 152 Voice1 the person typing at the prompt',
+].join('\n')
+
 const HELP = [
   '/textprov                      list what this process captured',
   '/textprov status               bridge, core, database and plugin state',
-  '/textprov inspect <id>         metadata, ID joins and claims of one observation',
+  '/textprov inspect <id>         metadata, ID joins, claims and text expiry of one observation',
   '/textprov match <src> <dst>    exact occurrences of the source block in the target',
-  '/textprov claim <id> <start> <end> <voice> [definition...]',
+  '/textprov claim <id> <start> <end> <voice-id> [definition...]',
   '                               record an explicit attribution claim on a scalar range',
   'IDs may be unambiguous prefixes of observation IDs listed by /textprov.',
+  CLAIM_USAGE,
 ].join('\n')
 
 function short(id: string): string {
@@ -338,9 +348,8 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
     }
     case 'claim': {
       const [, given, start, end, voice, ...rest] = words
-      if (given === undefined || start === undefined || end === undefined || voice === undefined) {
-        return 'usage: /textprov claim <id> <start> <end> <voice-id> [definition...]'
-      }
+      if (given === undefined || start === undefined || end === undefined || voice === undefined) return CLAIM_USAGE
+      if (!/^\d+$/.test(start) || !/^\d+$/.test(end)) return `start and end must be whole numbers\n${CLAIM_USAGE}`
       const id = await resolve($, given)
       const info = await bridge($, options, { operation: 'inspect', observation_id: id })
       if (!info.ok) return info.error
@@ -377,7 +386,7 @@ export const register: Register = (on, options) => {
     await $.command.register({
       name: COMMAND,
       description: 'TextProv attribution chronicle: list, status, inspect, match, claim',
-      argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <voice>]',
+      argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN> [definition]]',
     })
     const id = await $.session.id()
     // The adapter string is pinned at the session's first load. A hot reload

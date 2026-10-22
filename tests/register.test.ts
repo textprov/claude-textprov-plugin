@@ -305,6 +305,9 @@ test('the list command shows what was captured and the status command adds the p
 
   const unknown = await $.command.run({ command: 'textprov', args: 'inspect obs-1.', origin: ORIGIN, presentation: PRESENTATION })
   expect(unknown.text).toContain('no observation matches "obs-1."')
+  const usage = await $.command.run({ command: 'textprov', args: 'claim', origin: ORIGIN, presentation: PRESENTATION })
+  expect(usage.text).toContain('Voice1')
+  expect(usage.text).toContain('Unicode scalars')
 })
 
 test('a bridge failure is reported, never silently dropped, and kept in the store for the session', async ($, on) => {
