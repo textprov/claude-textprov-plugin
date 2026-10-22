@@ -24,6 +24,8 @@ export type TextprovObservation = {
 export type TextprovFailure = {
   key: string
   error: string
+  /** When the failure was recorded, ISO 8601. */
+  at: string
 }
 
 /** One event as the module hands it to the chronicle; kept when the bridge never answered, to be retried. */
@@ -73,6 +75,8 @@ declare module 'claude-code' {
       adapter: string | null
       /** Captures the bridge never answered (an interrupt killed it), retried at the next event. */
       backlog: TextprovCapture[]
+      /** When this process first loaded the module, ISO 8601; what "this process" counts from. */
+      since: string | null
     }
   }
 }

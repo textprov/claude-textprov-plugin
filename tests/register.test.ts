@@ -9,8 +9,22 @@ const PRESENTATION = { isFullscreen: false, columns: 80 } as const
 const SESSION = { cwd: '/project', surface: 'terminal', isInteractive: true } as const
 const SESSION_STATE = { observations: 0, last_sequence: 0 }
 
+/** What the bridge prints on stderr before exiting 1, as the mock answers it. */
+class Refusal extends Error {}
+
+type Fixture = {
+  requests: Request[]
+  /** What the plugin put in `$.store`, by key. */
+  store: Record<string, unknown>
+}
+
 /** Stands in for the engine and for the Python bridge: every request is kept, every observe answered with a fresh id. */
-function engine(on: On, requests: Request[], answer?: (request: Request) => unknown, spawnedAgent?: string) {
+function engine(
+  on: On,
+  fixture: Fixture,
+  bridge?: (request: Request) => unknown,
+  spawnedAgent?: string,
+) {
   let minted = 0
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: { command: 'textprov' } }))
@@ -19,6 +33,16 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
   on('session.version', () => ({ value: { version: '0.0.0-test' } }))
   on('ui.status', () => ({ value: undefined }))
   on('clock.after', () => ({ value: undefined }))
+  on('store.get', (_, e) => ({ value: fixture.store[e.key] }))
+  on('store.set', (_, e) => {
+    fixture.store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('store.delete', (_, e) => {
+    delete fixture.store[e.key]
+    return { value: undefined }
+  })
+  on('store.keys', () => ({ value: Object.keys(fixture.store) }))
   on('prompt.submit', (_, e) => ({ text: e.text }))
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('tool.call', () => ({ result: {} }))
@@ -26,8 +50,13 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
   on('agent.spawn', () => ({ model: 'test-model', agentId: spawnedAgent ?? 'agent-1' }))
   on('process.run', (_, e) => {
     const request = JSON.parse(e.init?.stdin ?? '{}') as Request
-    requests.push(request)
-    const given = answer?.(request)
+    fixture.requests.push(request)
+    const given = bridge?.(request)
+    if (given instanceof Refusal) {
+      return {
+        value: { exitCode: 1, stdout: '', stderr: JSON.stringify({ error: given.message }), isStdoutTruncated: false, isStderrTruncated: false },
+      }
+    }
     if (given instanceof Error) throw given
     const result =
       given !== undefined ? given : request.operation === 'observe' ? `obs-${++minted}` : request.operation === 'session' ? SESSION_STATE : {}
@@ -37,15 +66,16 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
   })
 }
 
+const fixture = (): Fixture => ({ requests: [], store: {} })
 const observed = (requests: Request[]) => requests.filter(one => one.operation === 'observe')
 
 test('a submission is observed as stored user text, with no claim', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   await $.prompt.submit({ text: 'Keep the original wording.', wait: false, origin: ORIGIN })
 
-  const captured = observed(requests)
+  const captured = observed(f.requests)
   expect(captured.length).toBe(1)
   const one = captured[0]!
   expect(one.event_kind).toBe('submission')
@@ -59,22 +89,22 @@ test('a submission is observed as stored user text, with no claim', async ($, on
 })
 
 test('a slash command is not a submission', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   await $.prompt.submit({ text: '/textprov', command: { name: 'textprov', args: '' }, wait: false, origin: ORIGIN })
-  expect(observed(requests).length).toBe(0)
+  expect(observed(f.requests).length).toBe(0)
 })
 
 test('the submission key carries its capture sequence, and the answer joins the prompt through the turn', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   await $.prompt.submit({ text: 'hello', wait: false, origin: ORIGIN })
   await $.turn.start({ text: 'hello', turnId: 'turn-1' })
   await $.turn.complete({ answer: 'Hi.', durationMs: 1, isAborted: false, turnId: 'turn-1', reason: 'answer' })
 
-  const [submission, answer] = observed(requests)
+  const [submission, answer] = observed(f.requests)
   expect(submission!.delivery_key).toBe('prompt:1')
   expect(submission!.capture_sequence).toBe(1)
   expect((submission!.host_ids as Ids).prompt).toBe('prompt:1')
@@ -86,38 +116,38 @@ test('the submission key carries its capture sequence, and the answer joins the 
 })
 
 test('a continued turn claims no submission', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   await $.turn.start({ text: '', turnId: 'turn-2' })
   await $.turn.complete({ answer: 'Done.', durationMs: 1, isAborted: false, turnId: 'turn-2', reason: 'answer' })
 
-  const [answer] = observed(requests)
+  const [answer] = observed(f.requests)
   expect((answer!.host_ids as Ids).turn).toBe('turn-2')
   expect((answer!.host_ids as Ids).prompt).toBeUndefined()
 })
 
 test('a prompt typed while a turn runs records that turn as submitted_during, never as its turn', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   await $.turn.start({ text: 'first', turnId: 'turn-a' })
   await $.prompt.submit({ text: 'while you work', turnId: 'turn-a', wait: false, origin: ORIGIN })
 
-  const [queued] = observed(requests)
+  const [queued] = observed(f.requests)
   expect(queued!.delivery_key).toBe('prompt:1')
   expect((queued!.host_ids as Ids).submitted_during).toBe('turn-a')
   expect((queued!.host_ids as Ids).turn).toBeUndefined()
 })
 
 test('a pasted block is also recorded on its own, joined to the submission', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   const text = 'Look at this:\n<pasted_content id="ab12">\nquoted line\n</pasted_content id="ab12">\nthoughts?'
   await $.prompt.submit({ text, wait: false, origin: ORIGIN })
 
-  const [submission, paste] = observed(requests)
+  const [submission, paste] = observed(f.requests)
   expect(submission!.text).toBe(text)
   expect(paste!.event_kind).toBe('pasted_block')
   expect(paste!.channel).toBe('user')
@@ -128,27 +158,27 @@ test('a pasted block is also recorded on its own, joined to the submission', asy
 })
 
 test('the sequence continues from the chronicle when a session is loaded again', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests, request => (request.operation === 'session' ? { observations: 7, last_sequence: 7 } : undefined))
+  const f = fixture()
+  engine(on, f, request => (request.operation === 'session' ? { observations: 7, last_sequence: 7 } : undefined))
   await $.session.start(SESSION)
-  expect(requests[0]!.operation).toBe('session')
-  expect(requests[0]!.session_id).toBe('session-test')
+  expect(f.requests[0]!.operation).toBe('session')
+  expect(f.requests[0]!.session_id).toBe('session-test')
   await $.prompt.submit({ text: 'again', wait: false, origin: ORIGIN })
 
-  const [submission] = observed(requests)
+  const [submission] = observed(f.requests)
   expect(submission!.delivery_key).toBe('prompt:8')
   expect(submission!.capture_sequence).toBe(8)
 })
 
 test('a Write is observed as a call and a result joined by tool_call and the running turn', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   await $.turn.start({ text: 'write it', turnId: 'turn-3' })
   await $.tool.call({ tool: 'Write', file_path: '/project/notes.md', content: 'Draft: Keep the original wording.' })
 
-  const call = requests.find(one => one.event_kind === 'tool_call')
-  const result = requests.find(one => one.event_kind === 'tool_result')
+  const call = f.requests.find(one => one.event_kind === 'tool_call')
+  const result = f.requests.find(one => one.event_kind === 'tool_result')
   expect(call).toBeDefined()
   expect(result).toBeDefined()
   expect(call!.text).toBe('Draft: Keep the original wording.')
@@ -164,12 +194,12 @@ test('a Write is observed as a call and a result joined by tool_call and the run
   expect(result!.visibility).toBe('structured')
   expect(String(call!.delivery_key)).toBe(`${id}:call`)
   expect(String(result!.delivery_key)).toBe(`${id}:result`)
-  expect(requests.some(one => one.event_kind === 'tool_anchor')).toBe(false)
+  expect(f.requests.some(one => one.event_kind === 'tool_anchor')).toBe(false)
 })
 
 test('an Edit records its anchor beside the new string', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests)
+  const f = fixture()
+  engine(on, f)
   await $.session.start(SESSION)
   await $.tool.call({
     tool: 'Edit',
@@ -178,8 +208,8 @@ test('an Edit records its anchor beside the new string', async ($, on) => {
     new_string: '## Heading\n\nA new paragraph.\n',
   })
 
-  const call = requests.find(one => one.event_kind === 'tool_call')
-  const anchor = requests.find(one => one.event_kind === 'tool_anchor')
+  const call = f.requests.find(one => one.event_kind === 'tool_call')
+  const anchor = f.requests.find(one => one.event_kind === 'tool_anchor')
   expect(call!.text).toBe('## Heading\n\nA new paragraph.\n')
   expect(anchor!.text).toBe('## Heading\n')
   expect(anchor!.channel).toBe('assistant')
@@ -191,8 +221,8 @@ test('an Edit records its anchor beside the new string', async ($, on) => {
 })
 
 test('a subagent task is recorded in the parent loop, and the subagent answer carries the agent id', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests, undefined, 'agent-7')
+  const f = fixture()
+  engine(on, f, undefined, 'agent-7')
   await $.session.start(SESSION)
   await $.turn.start({ text: 'delegate it', turnId: 'turn-p' })
   await $.agent.spawn({
@@ -208,8 +238,8 @@ test('a subagent task is recorded in the parent loop, and the subagent answer ca
   await $.turn.start({ text: 'Write one line to notes.md', turnId: 'turn-s', agentId: 'agent-7' })
   await $.turn.complete({ answer: 'done', durationMs: 1, isAborted: false, turnId: 'turn-s', reason: 'answer', agentId: 'agent-7' })
 
-  const task = requests.find(one => one.event_kind === 'agent_task')
-  const answer = requests.find(one => one.event_kind === 'assistant_message')
+  const task = f.requests.find(one => one.event_kind === 'agent_task')
+  const answer = f.requests.find(one => one.event_kind === 'assistant_message')
   expect(task!.text).toBe('Write one line to notes.md')
   expect(task!.channel).toBe('assistant')
   expect(task!.agent_id).toBe(null)
@@ -223,9 +253,9 @@ test('a subagent task is recorded in the parent loop, and the subagent answer ca
 })
 
 test('a capture the bridge never answered is retried with the same key and sequence', async ($, on) => {
-  const requests: Request[] = []
+  const f = fixture()
   let killed = false
-  engine(on, requests, request => {
+  engine(on, f, request => {
     if (request.operation === 'observe' && !killed) {
       killed = true
       return new Error('$.process.run(python3) aborted')
@@ -236,26 +266,29 @@ test('a capture the bridge never answered is retried with the same key and seque
   await $.prompt.submit({ text: 'first', wait: false, origin: ORIGIN })
   await $.prompt.submit({ text: 'second', wait: false, origin: ORIGIN })
 
-  const first = observed(requests).filter(one => one.delivery_key === 'prompt:1')
+  const first = observed(f.requests).filter(one => one.delivery_key === 'prompt:1')
   expect(first.length).toBe(2)
   expect(first[0]!.capture_sequence).toBe(1)
   expect(first[1]!.capture_sequence).toBe(1)
   expect(first[1]!.text).toBe('first')
-  const second = observed(requests).find(one => one.delivery_key === 'prompt:2')
+  const second = observed(f.requests).find(one => one.delivery_key === 'prompt:2')
   expect(second).toBeDefined()
   const listed = await $.command.run({ command: 'textprov', args: '', origin: ORIGIN, presentation: PRESENTATION })
-  expect(listed.text).toContain('2 observations this session')
+  expect(listed.text).toContain('2 observations captured by this process')
   expect(listed.text).not.toContain('failure')
 })
 
 test('the list command shows what was captured and the status command adds the plugin to the bridge report', async ($, on) => {
-  const requests: Request[] = []
-  engine(on, requests, request => (request.operation === 'status' ? { core: { available: true } } : undefined))
+  const f = fixture()
+  engine(on, f, request =>
+    request.operation === 'status' ? { core: { available: true } } : request.operation === 'session' ? { observations: 5, last_sequence: 0 } : undefined,
+  )
   await $.session.start(SESSION)
   await $.prompt.submit({ text: 'hello', wait: false, origin: ORIGIN })
 
   const listed = await $.command.run({ command: 'textprov', args: '', origin: ORIGIN, presentation: PRESENTATION })
-  expect(listed.text).toContain('1 observation this session')
+  expect(listed.text).toContain('1 observation captured by this process since ')
+  expect(listed.text).toContain('the chronicle holds 5 for this session')
   expect(listed.text).toContain('submission')
   expect(listed.text).toContain('obs-1'.slice(0, 8))
   expect(listed.text!.startsWith('textprov')).toBe(false)
@@ -268,39 +301,24 @@ test('the list command shows what was captured and the status command adds the p
   expect(status.text).toContain('"host_version": "0.0.0-test"')
   expect(status.text).toContain('"observations": 1')
   expect(status.text).toContain('"failures": 0')
+  expect(status.text).toContain('"observations": 5')
 
   const unknown = await $.command.run({ command: 'textprov', args: 'inspect obs-1.', origin: ORIGIN, presentation: PRESENTATION })
   expect(unknown.text).toContain('no observation matches "obs-1."')
 })
 
-test('a bridge failure is reported, never silently dropped', async ($, on) => {
-  const requests: Request[] = []
-  on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('command.register', () => ({ value: { command: 'textprov' } }))
-  on('session.id', () => ({ value: 'session-test' }))
-  on('session.root', () => ({ value: '/project' }))
-  on('session.version', () => ({ value: { version: '0.0.0-test' } }))
-  on('ui.status', () => ({ value: undefined }))
-  on('prompt.submit', (_, e) => ({ text: e.text }))
-  on('process.run', (_, e) => {
-    requests.push(JSON.parse(e.init?.stdin ?? '{}') as Request)
-    return {
-      value: {
-        exitCode: 1,
-        stdout: '',
-        stderr: JSON.stringify({ error: 'RuntimeError: textprov has no chronicle module' }),
-        isStdoutTruncated: false,
-        isStderrTruncated: false,
-      },
-    }
-  })
+test('a bridge failure is reported, never silently dropped, and kept in the store for the session', async ($, on) => {
+  const f = fixture()
+  engine(on, f, () => new Refusal('RuntimeError: textprov has no chronicle module'))
   await $.session.start(SESSION)
   const submitted = await $.prompt.submit({ text: 'hello', wait: false, origin: ORIGIN })
   expect(submitted.text).toBe('hello')
 
   const listed = await $.command.run({ command: 'textprov', args: 'list', origin: ORIGIN, presentation: PRESENTATION })
-  expect(listed.text).toContain('0 observations this session')
+  expect(listed.text).toContain('0 observations captured by this process')
   // One failure for the session state at session start, one for the submission.
-  expect(listed.text).toContain('2 capture failures')
+  expect(listed.text).toContain('2 capture failures this session; the last one: prompt:1: ')
   expect(listed.text).toContain('no chronicle module')
+  const stored = f.store['failures:session-test'] as { key: string }[]
+  expect(stored.map(one => one.key)).toEqual(['session', 'prompt:1'])
 })

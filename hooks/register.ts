@@ -26,6 +26,8 @@ const MAIN = 'main'
 const RETRY_MS = 500
 /** How many times a capture is handed to the bridge before it is given up as a failure. */
 const ATTEMPTS = 3
+/** How many sessions' failure lists `$.store` keeps, this one included. */
+const STORED_SESSIONS = 10
 /** A pasted block as the host wraps it in the prompt text. */
 const PASTE = /<pasted_content id="([^"]+)">([\s\S]*?)<\/pasted_content id="\1">/g
 
@@ -36,6 +38,7 @@ const pending = atom({ plugin: 'textprov', key: 'pending' } as const, null as Te
 const turns = atom({ plugin: 'textprov', key: 'turns' } as const, {} as Record<string, TextprovTurn>)
 const adapter = atom({ plugin: 'textprov', key: 'adapter' } as const, null as string | null)
 const backlog = atom({ plugin: 'textprov', key: 'backlog' } as const, [] as TextprovCapture[])
+const since = atom({ plugin: 'textprov', key: 'since' } as const, null as string | null)
 
 async function nextSequence($: EngineInterface): Promise<number> {
   let value = 0
@@ -49,6 +52,10 @@ function scalars(text: string): number {
   return count
 }
 
+function storeKey(sessionId: string): string {
+  return `failures:${sessionId}`
+}
+
 // The host labels the status line with the plugin's name, so the line itself
 // carries only the counts.
 async function showStatus($: EngineInterface): Promise<void> {
@@ -60,8 +67,10 @@ async function showStatus($: EngineInterface): Promise<void> {
   $.ui.status(parts.join(', '))
 }
 
+/** Records a failure for the session, in state and in the store, so a resumed process still lists it. */
 async function fail($: EngineInterface, key: string, error: string): Promise<void> {
-  await update($, failures, list => [...list, { key, error }].slice(-KEEP))
+  const failed = await update($, failures, list => [...list, { key, error, at: new Date().toISOString() }].slice(-KEEP))
+  await $.store.set(storeKey(await $.session.id()), failed)
   await showStatus($)
 }
 
@@ -216,7 +225,7 @@ async function captureTool(
 }
 
 const HELP = [
-  '/textprov                      list this session\'s observations',
+  '/textprov                      list what this process captured',
   '/textprov status               bridge, core, database and plugin state',
   '/textprov inspect <id>         metadata, ID joins and claims of one observation',
   '/textprov match <src> <dst>    exact occurrences of the source block in the target',
@@ -242,12 +251,21 @@ function pretty(value: unknown): string {
   return JSON.stringify(value, null, 2)
 }
 
+async function sessionState($: EngineInterface, options: PluginOptions): Promise<Record<string, unknown>> {
+  const ran = await bridge($, options, { operation: 'session', provider: PROVIDER, session_id: await $.session.id() })
+  if (!ran.ok) return { error: ran.error }
+  return ran.result !== null && typeof ran.result === 'object' ? (ran.result as Record<string, unknown>) : {}
+}
+
 // Command output is shown under the command's name, so none of it repeats "textprov:".
 
-async function listing($: EngineInterface): Promise<string> {
+async function listing($: EngineInterface, options: PluginOptions): Promise<string> {
   const list = await read($, observations)
   const failed = await read($, failures)
-  const lines = [`${list.length} observation${list.length === 1 ? '' : 's'} this session`]
+  const waiting = await read($, backlog)
+  const lines = [`${list.length} observation${list.length === 1 ? '' : 's'} captured by this process since ${await read($, since)}`]
+  const session = await sessionState($, options)
+  if (typeof session.observations === 'number') lines.push(`the chronicle holds ${session.observations} for this session`)
   for (const one of list) {
     const where = one.path !== undefined ? ` ${one.path}` : ''
     const agent = one.agentId !== undefined ? ` agent=${one.agentId}` : ''
@@ -256,15 +274,17 @@ async function listing($: EngineInterface): Promise<string> {
       `  ${short(one.id)}  ${one.kind.padEnd(17)} ${one.channel.padEnd(9)} ${String(one.chars).padStart(6)} chars${tool}${where}${agent}`,
     )
   }
+  if (waiting.length > 0) lines.push(`${waiting.length} capture${waiting.length === 1 ? '' : 's'} waiting to be retried`)
   if (failed.length > 0) {
-    lines.push(`${failed.length} capture failure${failed.length === 1 ? '' : 's'}; the last one: ${failed[failed.length - 1]!.error}`)
+    const last = failed[failed.length - 1]!
+    lines.push(`${failed.length} capture failure${failed.length === 1 ? '' : 's'} this session; the last one: ${last.key}: ${last.error}`)
   }
   if (list.length === 0 && failed.length === 0) lines.push('  nothing captured yet')
   return lines.join('\n')
 }
 
 /** What the bridge cannot know: this plugin, this host, this session and its capture state. */
-async function pluginStatus($: EngineInterface): Promise<Record<string, unknown>> {
+async function pluginStatus($: EngineInterface, options: PluginOptions): Promise<Record<string, unknown>> {
   const list = await read($, observations)
   const failed = await read($, failures)
   const host = await $.session.version()
@@ -275,10 +295,13 @@ async function pluginStatus($: EngineInterface): Promise<Record<string, unknown>
     loaded_version: VERSION,
     host_version: host.version,
     session_id: await $.session.id(),
+    since: await read($, since),
     sequence: await read($, sequence),
     observations: list.length,
+    to_retry: (await read($, backlog)).length,
     failures: failed.length,
-    ...(failed.length === 0 ? {} : { last_failure: failed[failed.length - 1]!.error }),
+    ...(failed.length === 0 ? {} : { last_failure: failed[failed.length - 1] }),
+    session: await sessionState($, options),
   }
 }
 
@@ -288,12 +311,12 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
   const verb = words[0] ?? 'list'
   switch (verb) {
     case 'list':
-      return listing($)
+      return listing($, options)
     case 'help':
       return HELP
     case 'status': {
       const ran = await bridge($, options, { operation: 'status' })
-      const plugin = await pluginStatus($)
+      const plugin = await pluginStatus($, options)
       if (!ran.ok) return pretty({ bridge_error: ran.error, plugin })
       const report = ran.result !== null && typeof ran.result === 'object' ? ran.result : { result: ran.result }
       return pretty({ ...report, plugin })
@@ -343,6 +366,12 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
   }
 }
 
+/** Keeps the store to the last few sessions' failure lists, this session's always included. */
+async function pruneStore($: EngineInterface, mine: string): Promise<void> {
+  const others = (await $.store.keys()).filter(key => key.startsWith('failures:') && key !== storeKey(mine))
+  for (const key of others.slice(0, Math.max(0, others.length - (STORED_SESSIONS - 1)))) await $.store.delete(key)
+}
+
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -355,6 +384,12 @@ export const register: Register = (on, options) => {
     // of a newer module keeps recording under it, so the chronicle's duplicate
     // check (scope, adapter, delivery key) holds for the whole session.
     await update($, adapter, current => current ?? ADAPTER)
+    await update($, since, current => current ?? new Date().toISOString())
+    // Failures live in the store per session: a resumed process still lists
+    // what an earlier one could not write.
+    const stored = await $.store.get(storeKey(id))
+    if (Array.isArray(stored)) await update($, failures, list => (list.length === 0 ? (stored as TextprovFailure[]) : list))
+    await pruneStore($, id)
     // A resumed session keeps its id but not this module's counter; the chronicle
     // already holds this session's last capture_sequence, so the counter continues
     // from it and no `prompt:N` key is minted twice in the session's scope.
