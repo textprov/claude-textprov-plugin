@@ -1,0 +1,30 @@
+{
+  "name": "textprov",
+  "displayName": "TextProv attribution chronicle",
+  "version": "0.1.0",
+  "description": "Records prompt, Write/Edit and final-answer observations in the shared TextProv attribution chronicle and exposes /textprov for inspection, matching and explicit claims.",
+  "author": { "name": "TextProv contributors", "url": "https://textprov.org" },
+  "homepage": "https://github.com/textprov/textprov",
+  "repository": "https://github.com/textprov/claude-textprov-plugin",
+  "license": "Apache-2.0",
+  "keywords": ["attribution", "provenance", "textprov", "chronicle"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "textprov_python": {
+      "type": "directory",
+      "title": "TextProv checkout (python/ directory)",
+      "description": "Directory that contains the textprov package with chronicle.py, such as /path/to/textprov/python. Leave empty to use an installed textprov package."
+    },
+    "python": {
+      "type": "string",
+      "title": "Python interpreter",
+      "description": "Command used to run the chronicle bridge (Python 3.9 or newer).",
+      "default": "python3"
+    },
+    "data_dir": {
+      "type": "directory",
+      "title": "Chronicle data directory",
+      "description": "Where per-project chronicle databases are kept. Leave empty for ~/.claude/plugins/data/textprov."
+    }
+  }
+}
