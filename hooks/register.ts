@@ -10,8 +10,9 @@ import { bridge } from './bridge'
 // person makes one with `/textprov claim`.
 
 const PROVIDER = 'claude'
-const ADAPTER = 'claude-textprov-plugin/0.1.0'
-const POLICY = 'claude-textprov-plugin/0.1.0'
+const VERSION = '0.1.1' // keep in step with .claude-plugin/plugin.json
+const ADAPTER = `claude-textprov-plugin/${VERSION}`
+const POLICY = ADAPTER
 const COMMAND = 'textprov'
 const KEEP = 500
 /** The loop key of the main conversation in the `turns` map; subagents use their agent id. */

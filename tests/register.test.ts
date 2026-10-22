@@ -167,7 +167,7 @@ test('the list command shows what was captured and the status command adds the p
 
   const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
   expect(status.text).toContain('"available": true')
-  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.0"')
+  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.1"')
   expect(status.text).toContain('"session_id": "session-test"')
   expect(status.text).toContain('"host_version": "0.0.0-test"')
   expect(status.text).toContain('"observations": 1')

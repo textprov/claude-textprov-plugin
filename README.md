@@ -116,7 +116,7 @@ IDs may be unambiguous prefixes of the IDs `/textprov` lists. `start` and `end` 
 half-open Unicode scalar offsets into the observation's text and must sit on grapheme
 boundaries; the core refuses anything else. A claim is recorded with basis
 `user_command`, voice context `claude:<session id>` and policy version
-`claude-textprov-plugin/0.1.0`. Matching returns every exact occurrence and marks
+`claude-textprov-plugin/0.1.1`. Matching returns every exact occurrence and marks
 repeated passages `ambiguous`; nothing is selected automatically.
 
 ## Limits
