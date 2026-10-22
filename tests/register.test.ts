@@ -10,7 +10,7 @@ const SESSION = { cwd: '/project', surface: 'terminal', isInteractive: true } as
 const SESSION_STATE = { observations: 0, last_sequence: 0 }
 
 /** Stands in for the engine and for the Python bridge: every request is kept, every observe answered with a fresh id. */
-function engine(on: On, requests: Request[], answer?: (request: Request) => unknown) {
+function engine(on: On, requests: Request[], answer?: (request: Request) => unknown, spawnedAgent?: string) {
   let minted = 0
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', () => ({ value: { command: 'textprov' } }))
@@ -23,6 +23,7 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('tool.call', () => ({ result: {} }))
   on('turn.complete', (_, e) => ({ text: e.answer }))
+  on('agent.spawn', () => ({ model: 'test-model', agentId: spawnedAgent ?? 'agent-1' }))
   on('process.run', (_, e) => {
     const request = JSON.parse(e.init?.stdin ?? '{}') as Request
     requests.push(request)
@@ -154,6 +155,7 @@ test('a Write is observed as a call and a result joined by tool_call and the run
   expect(call!.visibility).toBe('model')
   expect((call!.host_ids as Ids).path).toBe('/project/notes.md')
   expect((call!.host_ids as Ids).turn).toBe('turn-3')
+  expect((call!.host_ids as Ids).agent).toBeUndefined()
   const id = (call!.host_ids as Ids).tool_call
   expect(typeof id).toBe('string')
   expect((result!.host_ids as Ids).tool_call).toBe(id)
@@ -185,6 +187,38 @@ test('an Edit records its anchor beside the new string', async ($, on) => {
   expect((anchor!.host_ids as Ids).tool_call).toBe(id)
   expect((anchor!.host_ids as Ids).path).toBe('/project/notes.md')
   expect(String(anchor!.delivery_key)).toBe(`${id}:anchor`)
+})
+
+test('a subagent task is recorded in the parent loop, and the subagent answer carries the agent id', async ($, on) => {
+  const requests: Request[] = []
+  engine(on, requests, undefined, 'agent-7')
+  await $.session.start(SESSION)
+  await $.turn.start({ text: 'delegate it', turnId: 'turn-p' })
+  await $.agent.spawn({
+    tool_use_id: 'toolu_agent',
+    prompt: 'Write one line to notes.md',
+    description: 'write a line',
+    subagentType: 'general-purpose',
+    provider: { plugin: 'engine', tier: 'core' },
+    parentModel: 'test-model',
+    background: false,
+    fork: false,
+  })
+  await $.turn.start({ text: 'Write one line to notes.md', turnId: 'turn-s', agentId: 'agent-7' })
+  await $.turn.complete({ answer: 'done', durationMs: 1, isAborted: false, turnId: 'turn-s', reason: 'answer', agentId: 'agent-7' })
+
+  const task = requests.find(one => one.event_kind === 'agent_task')
+  const answer = requests.find(one => one.event_kind === 'assistant_message')
+  expect(task!.text).toBe('Write one line to notes.md')
+  expect(task!.channel).toBe('assistant')
+  expect(task!.agent_id).toBe(null)
+  expect(task!.delivery_key).toBe('agent:agent-7:task')
+  expect((task!.host_ids as Ids).agent).toBe('agent-7')
+  expect((task!.host_ids as Ids).turn).toBe('turn-p')
+  expect((task!.host_ids as Ids).tool_call).toBe('toolu_agent')
+  expect(answer!.agent_id).toBe('agent-7')
+  expect((answer!.host_ids as Ids).agent).toBe('agent-7')
+  expect((answer!.host_ids as Ids).turn).toBe('turn-s')
 })
 
 test('a capture the bridge never answered is retried with the same key and sequence', async ($, on) => {

@@ -134,6 +134,10 @@ async function runningTurn($: EngineInterface, agentId: string | undefined): Pro
   return (await read($, turns))[agentId ?? MAIN]
 }
 
+function loopIds(agentId: string | undefined): Record<string, string> {
+  return agentId === undefined ? {} : { agent: agentId }
+}
+
 type ToolEnvelope = { tool: string; tool_use_id: string; agentId?: string }
 
 /** Records a Write or Edit input before the tool runs, and its result after. */
@@ -148,7 +152,12 @@ async function captureTool(
 ): Promise<ToolCallResult> {
   await flush($, options)
   const turn = await runningTurn($, e.agentId)
-  const hostIds = { tool_call: e.tool_use_id, path, ...(turn === undefined ? {} : { turn: turn.turnId }) }
+  const hostIds = {
+    tool_call: e.tool_use_id,
+    path,
+    ...(turn === undefined ? {} : { turn: turn.turnId }),
+    ...loopIds(e.agentId),
+  }
   const common = { agentId: e.agentId, tool: e.tool, path }
   const captures = [
     observe($, options, {
@@ -186,7 +195,7 @@ async function captureTool(
       channel: 'engine',
       visibility: 'model',
       text: null,
-      hostIds: { tool_call: e.tool_use_id },
+      hostIds: { tool_call: e.tool_use_id, ...loopIds(e.agentId) },
       ...common,
     })
     return ran
@@ -200,7 +209,7 @@ async function captureTool(
     channel: 'tool',
     visibility: relayed === undefined ? 'structured' : 'model',
     text: relayed ?? JSON.stringify(ran.result ?? null),
-    hostIds: { tool_call: e.tool_use_id },
+    hostIds: { tool_call: e.tool_use_id, ...loopIds(e.agentId) },
     ...common,
   })
   return ran
@@ -436,6 +445,32 @@ export const register: Register = (on, options) => {
     captureTool($, options, e, e.new_string, e.file_path, () => next(e), e.old_string),
   )
 
+  // The task a subagent is given is assistant text written in the parent's
+  // loop. It is recorded there with the Agent call's id and the started agent's
+  // id; every capture in the subagent's loop carries that agent id too, so the
+  // two sides join on `agent` although they sit in different scopes.
+  on('agent.spawn', async ($, e, next) => {
+    const ran = await next(e)
+    if (ran.deny !== undefined || ran.agentId === undefined) return ran
+    const turn = await runningTurn($, e.parentAgentId)
+    await observe($, options, {
+      key: `agent:${ran.agentId}:task`,
+      kind: 'agent_task',
+      channel: 'assistant',
+      visibility: 'model',
+      text: e.prompt,
+      hostIds: {
+        agent: ran.agentId,
+        ...(e.tool_use_id === '' ? {} : { tool_call: e.tool_use_id }),
+        ...(turn === undefined ? {} : { turn: turn.turnId }),
+        ...loopIds(e.parentAgentId),
+      },
+      agentId: e.parentAgentId,
+      tool: 'Agent',
+    })
+    return ran
+  })
+
   // The final answer as the engine reports it: display text, not the stored
   // row, so it is recorded with display visibility.
   on('turn.complete', async ($, e, next) => {
@@ -452,7 +487,11 @@ export const register: Register = (on, options) => {
         visibility: 'display',
         text: e.answer,
         completeness: e.isAborted ? 'partial' : 'complete',
-        hostIds: started?.submission === undefined ? { turn: e.turnId } : { turn: e.turnId, prompt: started.submission },
+        hostIds: {
+          turn: e.turnId,
+          ...(started?.submission === undefined ? {} : { prompt: started.submission }),
+          ...loopIds(e.agentId),
+        },
         agentId: e.agentId,
       })
     }
