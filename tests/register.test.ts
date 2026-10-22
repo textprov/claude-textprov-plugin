@@ -174,7 +174,9 @@ test('the list command shows what was captured and the status command adds the p
   expect(status.text).toContain('"host_version": "0.0.0-test"')
   expect(status.text).toContain('"observations": 1')
   expect(status.text).toContain('"failures": 0')
-  expect(requests[requests.length - 1]!.operation).toBe('status')
+
+  const unknown = await $.command.run({ command: 'textprov', args: 'inspect obs-1.', origin: ORIGIN, presentation: PRESENTATION })
+  expect(unknown.text).toContain('no observation matches "obs-1."')
 })
 
 test('a bridge failure is reported, never silently dropped', async ($, on) => {

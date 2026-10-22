@@ -141,7 +141,10 @@ def main(argv=None):
             raise ValueError("unknown operation: %r" % (operation,))
         print(json.dumps({"result": result}, ensure_ascii=False, sort_keys=True))
         return 0
-    except Exception as error:  # every failure is one JSON line for the hooks module
+    except ValueError as error:  # a refusal from the core or a bad request: the reason is the message
+        print(json.dumps({"error": str(error)}), file=sys.stderr)
+        return 1
+    except Exception as error:  # anything else names its class, since the message alone may not say what broke
         print(json.dumps({"error": "%s: %s" % (type(error).__name__, error)}), file=sys.stderr)
         return 1
 

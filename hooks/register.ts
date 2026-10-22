@@ -199,7 +199,8 @@ async function resolve($: EngineInterface, given: string): Promise<string> {
   const hits = list.filter(one => one.id.startsWith(given))
   if (hits.length === 1) return hits[0]!.id
   if (hits.length > 1) throw new Error(`"${given}" matches ${hits.length} observations; give more characters`)
-  return given
+  if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(given)) return given
+  throw new Error(`no observation matches "${given}" in this process's list; an older one needs its full ID`)
 }
 
 function pretty(value: unknown): string {

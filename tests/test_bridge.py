@@ -104,13 +104,16 @@ class BridgeTest(unittest.TestCase):
         captured = datetime.fromtimestamp(info["captured_at"], timezone.utc)
         self.assertAlmostEqual((expires - captured).total_seconds(), 3600, delta=1)
 
-    def test_core_errors_are_json_on_stderr(self):
+    def test_core_refusals_are_their_message_alone(self):
         process = self.call({"operation": "inspect", "observation_id": "nope"})
         self.assertEqual(process.returncode, 1)
-        self.assertIn("unknown observation", json.loads(process.stderr)["error"])
+        self.assertEqual(json.loads(process.stderr)["error"], "unknown observation: nope")
         process = self.call({"operation": "drop"})
         self.assertEqual(process.returncode, 1)
-        self.assertIn("unknown operation", json.loads(process.stderr)["error"])
+        self.assertEqual(json.loads(process.stderr)["error"], "unknown operation: 'drop'")
+        process = self.call({"operation": "session", "provider": "claude"})
+        self.assertEqual(process.returncode, 1)
+        self.assertEqual(json.loads(process.stderr)["error"], "KeyError: 'session_id'")
 
     def test_missing_chronicle_is_reported_by_status(self):
         stub = Path(self.temp.name) / "stub"
