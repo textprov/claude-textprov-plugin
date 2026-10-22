@@ -3,7 +3,8 @@
 Reads one JSON request from stdin, runs it against this project's chronicle
 database and prints ``{"result": ...}``. Errors are ``{"error": ...}`` on
 stderr with exit code 1. The attribution logic lives in ``textprov.chronicle``;
-this file only locates the core, the database, and reports status.
+this file only locates the core and the database, reports status, and answers
+the session's last capture sequence.
 """
 
 import argparse
@@ -11,6 +12,7 @@ import hashlib
 import json
 import os
 import platform
+import sqlite3
 import sys
 from pathlib import Path
 
@@ -81,6 +83,24 @@ def status(args, database):
     return report
 
 
+def last_sequence(database, provider, session_id):
+    """The highest capture_sequence this session recorded, across its agents; 0 for none.
+
+    Read-only on purpose: asking never creates the database. The hooks module
+    continues its counter from here when a resumed session loads it again.
+    """
+    if not database.exists():
+        return 0
+    db = sqlite3.connect("file:%s?mode=ro" % database, uri=True)
+    try:
+        row = db.execute("""SELECT MAX(json_extract(record, '$.capture_sequence')) FROM observations
+            WHERE json_extract(record, '$.provider') = ? AND json_extract(record, '$.session_id') = ?""",
+                         (provider, session_id)).fetchone()
+    finally:
+        db.close()
+    return int(row[0] or 0)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, help="project root the chronicle belongs to")
@@ -96,6 +116,8 @@ def main(argv=None):
         database = database_path(data_directory(args.data_dir), args.root)
         if operation == "status":
             result = status(args, database)
+        elif operation == "sequence":
+            result = last_sequence(database, request["provider"], request["session_id"])
         elif operation in OPERATIONS:
             _, chronicle = load_core(args.textprov_python)
             with chronicle.Chronicle(database) as instance:
