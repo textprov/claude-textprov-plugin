@@ -18,6 +18,7 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
   on('session.root', () => ({ value: '/project' }))
   on('session.version', () => ({ value: { version: '0.0.0-test' } }))
   on('ui.status', () => ({ value: undefined }))
+  on('clock.after', () => ({ value: undefined }))
   on('prompt.submit', (_, e) => ({ text: e.text }))
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
   on('tool.call', () => ({ result: {} }))
@@ -26,6 +27,7 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
     const request = JSON.parse(e.init?.stdin ?? '{}') as Request
     requests.push(request)
     const given = answer?.(request)
+    if (given instanceof Error) throw given
     const result =
       given !== undefined ? given : request.operation === 'observe' ? `obs-${++minted}` : request.operation === 'session' ? SESSION_STATE : {}
     return {
@@ -153,6 +155,32 @@ test('an Edit records its anchor beside the new string', async ($, on) => {
   expect((anchor!.host_ids as Ids).tool_call).toBe(id)
   expect((anchor!.host_ids as Ids).path).toBe('/project/notes.md')
   expect(String(anchor!.delivery_key)).toBe(`${id}:anchor`)
+})
+
+test('a capture the bridge never answered is retried with the same key and sequence', async ($, on) => {
+  const requests: Request[] = []
+  let killed = false
+  engine(on, requests, request => {
+    if (request.operation === 'observe' && !killed) {
+      killed = true
+      return new Error('$.process.run(python3) aborted')
+    }
+    return undefined
+  })
+  await $.session.start(SESSION)
+  await $.prompt.submit({ text: 'first', wait: false, origin: ORIGIN })
+  await $.prompt.submit({ text: 'second', wait: false, origin: ORIGIN })
+
+  const first = observed(requests).filter(one => one.delivery_key === 'prompt:1')
+  expect(first.length).toBe(2)
+  expect(first[0]!.capture_sequence).toBe(1)
+  expect(first[1]!.capture_sequence).toBe(1)
+  expect(first[1]!.text).toBe('first')
+  const second = observed(requests).find(one => one.delivery_key === 'prompt:2')
+  expect(second).toBeDefined()
+  const listed = await $.command.run({ command: 'textprov', args: '', origin: ORIGIN, presentation: PRESENTATION })
+  expect(listed.text).toContain('2 observations this session')
+  expect(listed.text).not.toContain('failure')
 })
 
 test('the list command shows what was captured and the status command adds the plugin to the bridge report', async ($, on) => {

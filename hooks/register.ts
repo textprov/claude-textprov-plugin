@@ -1,7 +1,13 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register, ToolCallResult } from 'claude-code'
 
-import type { TextprovFailure, TextprovObservation, TextprovPending, TextprovTurn } from '../types'
+import type {
+  TextprovCapture,
+  TextprovFailure,
+  TextprovObservation,
+  TextprovPending,
+  TextprovTurn,
+} from '../types'
 import { bridge } from './bridge'
 
 // Claude adapter for the shared TextProv chronicle. It records observations and
@@ -17,31 +23,17 @@ const COMMAND = 'textprov'
 const KEEP = 500
 /** The loop key of the main conversation in the `turns` map; subagents use their agent id. */
 const MAIN = 'main'
+/** How soon an unanswered capture is retried on its own, if no event retries it first. */
+const RETRY_MS = 500
+/** How many times a capture is handed to the bridge before it is given up as a failure. */
+const ATTEMPTS = 3
 
 const observations = atom({ plugin: 'textprov', key: 'observations' } as const, [] as TextprovObservation[])
 const failures = atom({ plugin: 'textprov', key: 'failures' } as const, [] as TextprovFailure[])
 const sequence = atom({ plugin: 'textprov', key: 'sequence' } as const, 0)
 const pending = atom({ plugin: 'textprov', key: 'pending' } as const, null as TextprovPending | null)
 const turns = atom({ plugin: 'textprov', key: 'turns' } as const, {} as Record<string, TextprovTurn>)
-
-type Visibility = 'structured' | 'model' | 'stored' | 'display'
-type Completeness = 'complete' | 'partial' | 'truncated' | 'unobserved'
-
-type Capture = {
-  key: string
-  kind: string
-  channel: string
-  visibility: Visibility
-  /** `null` records that the block existed but its text was not observed. */
-  text: string | null
-  completeness?: Completeness
-  hostIds?: Record<string, string>
-  agentId?: string
-  tool?: string
-  path?: string
-  /** A capture_sequence already taken for this event; otherwise the next one is taken here. */
-  sequence?: number
-}
+const backlog = atom({ plugin: 'textprov', key: 'backlog' } as const, [] as TextprovCapture[])
 
 async function nextSequence($: EngineInterface): Promise<number> {
   let value = 0
@@ -61,6 +53,8 @@ async function showStatus($: EngineInterface): Promise<void> {
   const parts = [`${(await read($, observations)).length} observed`]
   const failed = (await read($, failures)).length
   if (failed > 0) parts.push(`${failed} failed`)
+  const waiting = (await read($, backlog)).length
+  if (waiting > 0) parts.push(`${waiting} to retry`)
   $.ui.status(parts.join(', '))
 }
 
@@ -69,11 +63,7 @@ async function fail($: EngineInterface, key: string, error: string): Promise<voi
   await showStatus($)
 }
 
-async function observe(
-  $: EngineInterface,
-  options: PluginOptions,
-  capture: Capture,
-): Promise<string | undefined> {
+async function observe($: EngineInterface, options: PluginOptions, capture: TextprovCapture): Promise<string | undefined> {
   const seq = capture.sequence ?? (await nextSequence($))
   const host = await $.session.version()
   const ran = await bridge($, options, {
@@ -92,8 +82,24 @@ async function observe(
     host_ids: capture.hostIds ?? {},
     capture_sequence: seq,
   })
-  if (!ran.ok || typeof ran.result !== 'string') {
-    await fail($, capture.key, ran.ok ? 'bridge answered no observation id' : ran.error)
+  if (!ran.ok) {
+    const attempts = (capture.attempts ?? 0) + 1
+    if (ran.retryable === true && attempts < ATTEMPTS) {
+      // The interrupt that aborted this dispatch killed the bridge process, not
+      // the event. The capture keeps its sequence number and is written by the
+      // next dispatch, or by the timer when nothing else comes first.
+      await update($, backlog, list => [...list, { ...capture, sequence: seq, attempts }])
+      await showStatus($)
+      $.clock.after(RETRY_MS, () => {
+        void flush($, options)
+      })
+    } else {
+      await fail($, capture.key, ran.error)
+    }
+    return undefined
+  }
+  if (typeof ran.result !== 'string') {
+    await fail($, capture.key, 'bridge answered no observation id')
     return undefined
   }
   const row: TextprovObservation = {
@@ -109,6 +115,16 @@ async function observe(
   await update($, observations, list => (list.some(one => one.id === row.id) ? list : [...list, row].slice(-KEEP)))
   await showStatus($)
   return row.id
+}
+
+/** Writes the captures an interrupt left behind; the chronicle takes a repeated key with the same payload as the same event. */
+async function flush($: EngineInterface, options: PluginOptions): Promise<void> {
+  let taken: TextprovCapture[] = []
+  await update($, backlog, list => {
+    taken = list
+    return []
+  })
+  for (const capture of taken) await observe($, options, capture)
 }
 
 /** The turn running in a loop, as turn.start reported it; undefined between turns. */
@@ -128,6 +144,7 @@ async function captureTool(
   run: () => Promise<ToolCallResult>,
   anchor?: string,
 ): Promise<ToolCallResult> {
+  await flush($, options)
   const turn = await runningTurn($, e.agentId)
   const hostIds = { tool_call: e.tool_use_id, path, ...(turn === undefined ? {} : { turn: turn.turnId }) }
   const common = { agentId: e.agentId, tool: e.tool, path }
@@ -253,6 +270,7 @@ async function pluginStatus($: EngineInterface): Promise<Record<string, unknown>
 }
 
 async function runCommand($: EngineInterface, options: PluginOptions, args: string): Promise<string> {
+  await flush($, options)
   const words = args.trim().split(/\s+/).filter(word => word !== '')
   const verb = words[0] ?? 'list'
   switch (verb) {
@@ -351,6 +369,7 @@ export const register: Register = (on, options) => {
   // way; the submission records the turn only when it is already known here.
   on('prompt.submit', async ($, e, next) => {
     if (e.command !== undefined || e.isMeta === true) return next(e)
+    await flush($, options)
     const seq = await nextSequence($)
     const key = `prompt:${seq}`
     await update($, pending, () => ({ key, text: e.text }))
@@ -399,6 +418,7 @@ export const register: Register = (on, options) => {
   // row, so it is recorded with display visibility.
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
+    await flush($, options)
     const loop = e.agentId ?? MAIN
     const turn = (await read($, turns))[loop]
     const started = turn !== undefined && turn.turnId === e.turnId ? turn : undefined

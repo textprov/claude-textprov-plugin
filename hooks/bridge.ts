@@ -3,7 +3,8 @@ import type { EngineInterface, PluginOptions } from 'claude-code'
 /** One JSON request for scripts/textprov_bridge.py: the chronicle's operation and its keyword arguments. */
 export type BridgeRequest = { operation: string } & Record<string, unknown>
 
-export type BridgeResult = { ok: true; result: unknown } | { ok: false; error: string }
+/** `retryable`: the bridge never answered (the host killed it, or could not start it), so the same request may be run again. */
+export type BridgeResult = { ok: true; result: unknown } | { ok: false; error: string; retryable?: true }
 
 function text(options: PluginOptions, name: string): string | undefined {
   const value = options[name]
@@ -38,7 +39,10 @@ export async function bridge(
   try {
     ran = await $.process.run(argv, { stdin: JSON.stringify(request), timeoutMs: 20_000 })
   } catch (error) {
-    return { ok: false, error: `bridge did not run: ${String(error)}` }
+    // An interrupt aborts the dispatch this hook runs in, and that kills its
+    // child; the request itself was sound, so the caller may run it again. A
+    // refusal from the core, below, is final.
+    return { ok: false, error: `bridge did not run: ${String(error)}`, retryable: true }
   }
 
   if (ran.exitCode === 0) {

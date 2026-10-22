@@ -26,6 +26,25 @@ export type TextprovFailure = {
   error: string
 }
 
+/** One event as the module hands it to the chronicle; kept when the bridge never answered, to be retried. */
+export type TextprovCapture = {
+  key: string
+  kind: string
+  channel: string
+  visibility: 'structured' | 'model' | 'stored' | 'display'
+  /** `null` records that the block existed but its text was not observed. */
+  text: string | null
+  completeness?: 'complete' | 'partial' | 'truncated' | 'unobserved'
+  hostIds?: Record<string, string>
+  agentId?: string
+  tool?: string
+  path?: string
+  /** The capture_sequence taken for this event; a retry keeps it. */
+  sequence?: number
+  /** How many times the bridge was asked and never answered. */
+  attempts?: number
+}
+
 /** A submission recorded while the session was idle, waiting for the main-loop turn that starts with it. */
 export type TextprovPending = {
   /** The submission's delivery key, also its `prompt` host ID. */
@@ -50,6 +69,8 @@ declare module 'claude-code' {
       sequence: number
       pending: TextprovPending | null
       turns: Record<string, TextprovTurn>
+      /** Captures the bridge never answered (an interrupt killed it), retried at the next event. */
+      backlog: TextprovCapture[]
     }
   }
 }
