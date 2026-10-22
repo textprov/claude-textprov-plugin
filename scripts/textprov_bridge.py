@@ -4,7 +4,7 @@ Reads one JSON request from stdin, runs it against this project's chronicle
 database and prints ``{"result": ...}``. Errors are ``{"error": ...}`` on
 stderr with exit code 1. The attribution logic lives in ``textprov.chronicle``;
 this file only locates the core and the database, reports status, and answers
-the session's last capture sequence.
+what the chronicle holds for a session.
 """
 
 import argparse
@@ -83,22 +83,23 @@ def status(args, database):
     return report
 
 
-def last_sequence(database, provider, session_id):
-    """The highest capture_sequence this session recorded, across its agents; 0 for none.
+def session_state(database, provider, session_id):
+    """What the chronicle holds for one session across its agents: its row count and highest capture_sequence.
 
     Read-only on purpose: asking never creates the database. The hooks module
-    continues its counter from here when a resumed session loads it again.
+    continues its counter from ``last_sequence`` when a resumed session loads it
+    again, and reports ``observations`` beside its own per-process count.
     """
     if not database.exists():
-        return 0
+        return {"observations": 0, "last_sequence": 0}
     db = sqlite3.connect("file:%s?mode=ro" % database, uri=True)
     try:
-        row = db.execute("""SELECT MAX(json_extract(record, '$.capture_sequence')) FROM observations
+        row = db.execute("""SELECT COUNT(*), MAX(json_extract(record, '$.capture_sequence')) FROM observations
             WHERE json_extract(record, '$.provider') = ? AND json_extract(record, '$.session_id') = ?""",
                          (provider, session_id)).fetchone()
     finally:
         db.close()
-    return int(row[0] or 0)
+    return {"observations": int(row[0]), "last_sequence": int(row[1] or 0)}
 
 
 def main(argv=None):
@@ -116,8 +117,8 @@ def main(argv=None):
         database = database_path(data_directory(args.data_dir), args.root)
         if operation == "status":
             result = status(args, database)
-        elif operation == "sequence":
-            result = last_sequence(database, request["provider"], request["session_id"])
+        elif operation == "session":
+            result = session_state(database, request["provider"], request["session_id"])
         elif operation in OPERATIONS:
             _, chronicle = load_core(args.textprov_python)
             with chronicle.Chronicle(database) as instance:

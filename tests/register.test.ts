@@ -7,6 +7,7 @@ type Ids = Record<string, string>
 const ORIGIN = { kind: 'composer' } as const
 const PRESENTATION = { isFullscreen: false, columns: 80 } as const
 const SESSION = { cwd: '/project', surface: 'terminal', isInteractive: true } as const
+const SESSION_STATE = { observations: 0, last_sequence: 0 }
 
 /** Stands in for the engine and for the Python bridge: every request is kept, every observe answered with a fresh id. */
 function engine(on: On, requests: Request[], answer?: (request: Request) => unknown) {
@@ -25,7 +26,8 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
     const request = JSON.parse(e.init?.stdin ?? '{}') as Request
     requests.push(request)
     const given = answer?.(request)
-    const result = given !== undefined ? given : request.operation === 'observe' ? `obs-${++minted}` : request.operation === 'sequence' ? 0 : {}
+    const result =
+      given !== undefined ? given : request.operation === 'observe' ? `obs-${++minted}` : request.operation === 'session' ? SESSION_STATE : {}
     return {
       value: { exitCode: 0, stdout: JSON.stringify({ result }), stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
     }
@@ -93,9 +95,9 @@ test('a continued turn claims no submission', async ($, on) => {
 
 test('the sequence continues from the chronicle when a session is loaded again', async ($, on) => {
   const requests: Request[] = []
-  engine(on, requests, request => (request.operation === 'sequence' ? 7 : undefined))
+  engine(on, requests, request => (request.operation === 'session' ? { observations: 7, last_sequence: 7 } : undefined))
   await $.session.start(SESSION)
-  expect(requests[0]!.operation).toBe('sequence')
+  expect(requests[0]!.operation).toBe('session')
   expect(requests[0]!.session_id).toBe('session-test')
   await $.prompt.submit({ text: 'again', wait: false, origin: ORIGIN })
 
@@ -202,7 +204,7 @@ test('a bridge failure is reported, never silently dropped', async ($, on) => {
 
   const listed = await $.command.run({ command: 'textprov', args: 'list', origin: ORIGIN, presentation: PRESENTATION })
   expect(listed.text).toContain('0 observations this session')
-  // One failure for the sequence seed at session start, one for the submission.
+  // One failure for the session state at session start, one for the submission.
   expect(listed.text).toContain('2 capture failures')
   expect(listed.text).toContain('no chronicle module')
 })

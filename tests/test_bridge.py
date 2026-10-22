@@ -83,15 +83,17 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(len(self.ok({"operation": "inspect", "observation_id": target})["claims"]), 1)
         self.assertEqual(self.ok({"operation": "inspect", "observation_id": target})["claims"][0]["claim_id"], claim)
 
-    def test_sequence_continues_a_session_without_creating_the_database(self):
-        self.assertEqual(self.ok({"operation": "sequence", "provider": "claude", "session_id": "s1"}), 0)
+    def test_session_state_counts_a_session_without_creating_the_database(self):
+        empty = {"observations": 0, "last_sequence": 0}
+        self.assertEqual(self.ok({"operation": "session", "provider": "claude", "session_id": "s1"}), empty)
         self.assertFalse(self.ok({"operation": "status"})["database_exists"])
         self.ok(dict(self.common("prompt:1", "first"), capture_sequence=1))
         self.ok(dict(self.common("turn:t1:answer", "answer"), event_kind="assistant_message",
                      channel="assistant", visibility="display", capture_sequence=2, agent_id="sub-1"))
         self.ok(dict(self.common("prompt:1", "other session"), session_id="s2", capture_sequence=9))
-        self.assertEqual(self.ok({"operation": "sequence", "provider": "claude", "session_id": "s1"}), 2)
-        self.assertEqual(self.ok({"operation": "sequence", "provider": "claude", "session_id": "s3"}), 0)
+        self.assertEqual(self.ok({"operation": "session", "provider": "claude", "session_id": "s1"}),
+                         {"observations": 2, "last_sequence": 2})
+        self.assertEqual(self.ok({"operation": "session", "provider": "claude", "session_id": "s3"}), empty)
 
     def test_core_errors_are_json_on_stderr(self):
         process = self.call({"operation": "inspect", "observation_id": "nope"})

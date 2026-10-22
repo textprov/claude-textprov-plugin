@@ -314,16 +314,12 @@ export const register: Register = (on, options) => {
     // A resumed session keeps its id but not this module's counter; the chronicle
     // already holds this session's last capture_sequence, so the counter continues
     // from it and no `prompt:N` key is minted twice in the session's scope.
-    const seeded = await bridge($, options, {
-      operation: 'sequence',
-      provider: PROVIDER,
-      session_id: await $.session.id(),
-    })
-    if (seeded.ok && typeof seeded.result === 'number') {
-      const last = seeded.result
+    const seeded = await bridge($, options, { operation: 'session', provider: PROVIDER, session_id: await $.session.id() })
+    const last = seeded.ok ? (seeded.result as { last_sequence?: unknown }).last_sequence : undefined
+    if (typeof last === 'number') {
       await update($, sequence, n => Math.max(n, last))
-    } else if (!seeded.ok) {
-      await fail($, 'session', seeded.error)
+    } else {
+      await fail($, 'session', seeded.ok ? 'bridge answered no last_sequence' : seeded.error)
     }
     return next(e)
   })
