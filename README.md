@@ -67,20 +67,31 @@ Each project root gets its own SQLite database under
 `<data_dir>/chronicles/<digest of the real root path>/chronicle.sqlite`, with a `root.txt`
 beside it naming the root. Every chronicle call opens and closes the database in a
 separate Python process, so separate hook processes and parallel tool calls share it
-safely.
+safely. At session start the plugin reads the session's last `capture_sequence` from the
+database (read-only; `status` and this read never create it) and continues from there,
+so a resumed session reuses no `prompt:N` key.
 
 ## What it records
 
 | Event | Observation | Correlation |
 | --- | --- | --- |
-| A prompt you submit | `submission`, channel `user`, visibility `stored`, the text as it entered the turn | `turn` ID when the prompt joined a running turn |
-| `Write` or `Edit` tool input | `tool_call`, channel `assistant`, visibility `model`: the written content or the new string | `tool_call` (the tool_use id) and `path` |
+| A prompt you submit | `submission`, channel `user`, visibility `stored`, the text as it entered the turn | `prompt` (its own key, `prompt:N`), and the `turn` ID when the prompt joined a running turn |
+| `Write` or `Edit` tool input | `tool_call`, channel `assistant`, visibility `model`: the written content or the new string | `tool_call` (the tool_use id), `path`, and the running `turn` |
+| An `Edit`'s `old_string` | `tool_anchor`, channel `assistant`, visibility `model`: the text the assistant quoted from the file to place the edit | the same `tool_call`, `path` and `turn` |
 | The tool's result | `tool_result`, channel `tool`; visibility `model` when the engine relays the model-facing text, `structured` when only the record is available; a denied call is recorded as `unobserved` | the same `tool_call` ID |
-| The turn's final answer | `assistant_message`, channel `assistant`, visibility `display`; `partial` when the turn was aborted | `turn` ID, and the agent ID for subagent turns |
+| The turn's final answer | `assistant_message`, channel `assistant`, visibility `display`; `partial` when the turn was aborted | `turn` ID, the `prompt` of the submission that started the turn, and the agent ID for subagent turns |
+
+A prompt typed while the session is idle has no turn ID when it is submitted. The
+main-loop turn that starts with its text claims it: the answer and the tool calls made
+during that turn carry that `turn` ID, and the answer also carries the prompt's `prompt`
+key, so `inspect` on either side shows the other. The submission itself carries a `turn`
+ID only when the host had one at submission time. The number in `prompt:N` is the
+record's `capture_sequence`.
 
 Slash commands and hidden prompts are not submissions. Other tools (Bash, MultiEdit,
 NotebookEdit, MCP tools) are not observed yet; the gap is deliberate and visible, not
-filled by guessing.
+filled by guessing. An Edit's `replace_all` flag is not recorded either: the core's
+record has no field for it, so one anchor observation stands for every occurrence.
 
 Raw text goes into the core's bounded cache (1 MiB, one hour by default, a policy the
 first opener of a database sets). Metadata, ID joins and claims persist. An observation
@@ -94,7 +105,8 @@ never blocks the prompt or the tool.
 
 ```text
 /textprov                      list this session's observations
-/textprov status               bridge, core and database state
+/textprov status               bridge, core and database state, plus the plugin's own:
+                               adapter, host version, session id, sequence, counts
 /textprov inspect <id>         metadata, ID joins and claims of one observation
 /textprov match <src> <dst>    exact occurrences of the source block in the target
 /textprov claim <id> <start> <end> <voice> [definition...]
@@ -112,9 +124,11 @@ repeated passages `ambiguous`; nothing is selected automatically.
 - Capture ownership: do not enable this plugin together with another TextProv capture
   path (such as settings hooks that record prompts) for the same project; the design
   requires one owner per observation stream.
-- Observations are listed from session state; after a restart, `/textprov` lists only
-  the new session's captures, while the database keeps everything. Inspect older
-  observations by full ID.
+- Observations are listed from session state; after a restart or resume, `/textprov`
+  lists only the new process's captures, while the database keeps everything. Inspect
+  older observations by full ID.
+- Matching and claiming need the cached text, which expires with the cache policy (one
+  hour by default). A claim on an older observation fails with `content unavailable`.
 - The bridge runs one Python process per observation (roughly 100 ms each) and the
   hooks await it, so each prompt, Write, Edit and turn end pays that cost.
 - The prototype does not verify host coverage: a passing test here is not evidence
@@ -142,7 +156,7 @@ Layout:
 .claude-plugin/plugin.json       manifest, userConfig
 .claude-plugin/marketplace.json  this repository as a one-plugin marketplace
 hooks/hooks.json                 names the hooks module
-hooks/register.ts                the hooks: session.start, command.run, prompt.submit, tool.call, turn.complete
+hooks/register.ts                the hooks: session.start, command.run, prompt.submit, turn.start, tool.call, turn.complete
 hooks/bridge.ts                  runs scripts/textprov_bridge.py and parses its answer
 scripts/textprov_bridge.py       locates the core and the database; forwards one operation
 types/index.d.ts                 the $.state contract
