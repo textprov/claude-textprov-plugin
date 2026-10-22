@@ -55,9 +55,18 @@ function scalars(text: string): number {
   return count
 }
 
+// The host labels the status line with the plugin's name, so the line itself
+// carries only the counts.
+async function showStatus($: EngineInterface): Promise<void> {
+  const parts = [`${(await read($, observations)).length} observed`]
+  const failed = (await read($, failures)).length
+  if (failed > 0) parts.push(`${failed} failed`)
+  $.ui.status(parts.join(', '))
+}
+
 async function fail($: EngineInterface, key: string, error: string): Promise<void> {
-  const failed = await update($, failures, list => [...list, { key, error }].slice(-KEEP))
-  $.ui.status(`textprov: ${failed.length} capture failure${failed.length === 1 ? '' : 's'}`)
+  await update($, failures, list => [...list, { key, error }].slice(-KEEP))
+  await showStatus($)
 }
 
 async function observe(
@@ -97,10 +106,8 @@ async function observe(
     ...(capture.path === undefined ? {} : { path: capture.path }),
     ...(capture.agentId === undefined ? {} : { agentId: capture.agentId }),
   }
-  const list = await update($, observations, list =>
-    list.some(one => one.id === row.id) ? list : [...list, row].slice(-KEEP),
-  )
-  $.ui.status(`textprov: ${list.length} observed`)
+  await update($, observations, list => (list.some(one => one.id === row.id) ? list : [...list, row].slice(-KEEP)))
+  await showStatus($)
   return row.id
 }
 
