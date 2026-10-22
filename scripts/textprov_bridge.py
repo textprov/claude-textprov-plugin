@@ -14,9 +14,10 @@ import os
 import platform
 import sqlite3
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
-OPERATIONS = ("observe", "inspect", "match", "claim")
+OPERATIONS = ("observe", "match", "claim")
 
 
 def data_directory(given):
@@ -102,6 +103,15 @@ def session_state(database, provider, session_id):
     return {"observations": int(row[0]), "last_sequence": int(row[1] or 0)}
 
 
+def inspect(instance, observation_id):
+    """The core's inspection plus when its cached text expires, so a person knows how long a claim stays possible."""
+    report = instance.inspect(observation_id)
+    row = instance.db.execute("SELECT expires FROM cache WHERE observation_id = ?", (observation_id,)).fetchone()
+    report["content_expires_at"] = None if row is None else (
+        datetime.fromtimestamp(row[0], timezone.utc).isoformat(timespec="seconds"))
+    return report
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, help="project root the chronicle belongs to")
@@ -119,6 +129,10 @@ def main(argv=None):
             result = status(args, database)
         elif operation == "session":
             result = session_state(database, request["provider"], request["session_id"])
+        elif operation == "inspect":
+            _, chronicle = load_core(args.textprov_python)
+            with chronicle.Chronicle(database) as instance:
+                result = inspect(instance, request["observation_id"])
         elif operation in OPERATIONS:
             _, chronicle = load_core(args.textprov_python)
             with chronicle.Chronicle(database) as instance:

@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -94,6 +95,14 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(self.ok({"operation": "session", "provider": "claude", "session_id": "s1"}),
                          {"observations": 2, "last_sequence": 2})
         self.assertEqual(self.ok({"operation": "session", "provider": "claude", "session_id": "s3"}), empty)
+
+    def test_inspect_says_when_the_text_expires(self):
+        observation = self.ok(self.common("k1", "A passage"))
+        info = self.ok({"operation": "inspect", "observation_id": observation})
+        self.assertTrue(info["content_available"])
+        expires = datetime.fromisoformat(info["content_expires_at"])
+        captured = datetime.fromtimestamp(info["captured_at"], timezone.utc)
+        self.assertAlmostEqual((expires - captured).total_seconds(), 3600, delta=1)
 
     def test_core_errors_are_json_on_stderr(self):
         process = self.call({"operation": "inspect", "observation_id": "nope"})
