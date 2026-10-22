@@ -523,7 +523,8 @@ export const register: Register = (on, options) => {
   })
 
   // The final answer as the engine reports it: display text, not the stored
-  // row, so it is recorded with display visibility.
+  // row, so it is recorded with display visibility. An aborted turn that
+  // produced no text leaves no answer row.
   on('turn.complete', async ($, e, next) => {
     const ran = await next(e)
     await flush($, options)
