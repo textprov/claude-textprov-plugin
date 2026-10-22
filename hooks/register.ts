@@ -367,6 +367,11 @@ export const register: Register = (on, options) => {
   // starts with its text claims it at turn.start, which may run before or after
   // this hook resumes. The answer joins the submission through `prompt` either
   // way; the submission records the turn only when it is already known here.
+  //
+  // A prompt typed while a turn runs is queued by the host, which may deliver
+  // it into that turn, start the next turn with it, or never deliver it; this
+  // hook fires at queueing and cannot tell. That turn is recorded as
+  // `submitted_during`, a fact about timing, never as the prompt's `turn`.
   on('prompt.submit', async ($, e, next) => {
     if (e.command !== undefined || e.isMeta === true) return next(e)
     await flush($, options)
@@ -379,14 +384,16 @@ export const register: Register = (on, options) => {
       return ran
     }
     const started = await runningTurn($, undefined)
-    const turn = started?.submission === key ? started.turnId : e.turnId
+    const hostIds: Record<string, string> = { prompt: key }
+    if (started?.submission === key) hostIds.turn = started.turnId
+    else if (e.turnId !== undefined) hostIds.submitted_during = e.turnId
     await observe($, options, {
       key,
       kind: 'submission',
       channel: 'user',
       visibility: 'stored',
       text: ran.text,
-      hostIds: turn === undefined ? { prompt: key } : { prompt: key, turn },
+      hostIds,
       sequence: seq,
     })
     return ran

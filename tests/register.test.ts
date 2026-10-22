@@ -95,6 +95,19 @@ test('a continued turn claims no submission', async ($, on) => {
   expect((answer!.host_ids as Ids).prompt).toBeUndefined()
 })
 
+test('a prompt typed while a turn runs records that turn as submitted_during, never as its turn', async ($, on) => {
+  const requests: Request[] = []
+  engine(on, requests)
+  await $.session.start(SESSION)
+  await $.turn.start({ text: 'first', turnId: 'turn-a' })
+  await $.prompt.submit({ text: 'while you work', turnId: 'turn-a', wait: false, origin: ORIGIN })
+
+  const [queued] = observed(requests)
+  expect(queued!.delivery_key).toBe('prompt:1')
+  expect((queued!.host_ids as Ids).submitted_during).toBe('turn-a')
+  expect((queued!.host_ids as Ids).turn).toBeUndefined()
+})
+
 test('the sequence continues from the chronicle when a session is loaded again', async ($, on) => {
   const requests: Request[] = []
   engine(on, requests, request => (request.operation === 'session' ? { observations: 7, last_sequence: 7 } : undefined))
