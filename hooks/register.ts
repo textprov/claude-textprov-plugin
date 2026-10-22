@@ -18,7 +18,6 @@ import { bridge } from './bridge'
 const PROVIDER = 'claude'
 const VERSION = '0.1.1' // keep in step with .claude-plugin/plugin.json
 const ADAPTER = `claude-textprov-plugin/${VERSION}`
-const POLICY = ADAPTER
 const COMMAND = 'textprov'
 const KEEP = 500
 /** The loop key of the main conversation in the `turns` map; subagents use their agent id. */
@@ -35,6 +34,7 @@ const failures = atom({ plugin: 'textprov', key: 'failures' } as const, [] as Te
 const sequence = atom({ plugin: 'textprov', key: 'sequence' } as const, 0)
 const pending = atom({ plugin: 'textprov', key: 'pending' } as const, null as TextprovPending | null)
 const turns = atom({ plugin: 'textprov', key: 'turns' } as const, {} as Record<string, TextprovTurn>)
+const adapter = atom({ plugin: 'textprov', key: 'adapter' } as const, null as string | null)
 const backlog = atom({ plugin: 'textprov', key: 'backlog' } as const, [] as TextprovCapture[])
 
 async function nextSequence($: EngineInterface): Promise<number> {
@@ -71,7 +71,7 @@ async function observe($: EngineInterface, options: PluginOptions, capture: Text
   const ran = await bridge($, options, {
     operation: 'observe',
     provider: PROVIDER,
-    adapter: ADAPTER,
+    adapter: (await read($, adapter)) ?? ADAPTER,
     host_version: host.version,
     session_id: await $.session.id(),
     agent_id: capture.agentId ?? null,
@@ -268,9 +268,11 @@ async function pluginStatus($: EngineInterface): Promise<Record<string, unknown>
   const list = await read($, observations)
   const failed = await read($, failures)
   const host = await $.session.version()
+  const pinned = (await read($, adapter)) ?? ADAPTER
   return {
-    adapter: ADAPTER,
-    policy_version: POLICY,
+    adapter: pinned,
+    policy_version: pinned,
+    loaded_version: VERSION,
     host_version: host.version,
     session_id: await $.session.id(),
     sequence: await read($, sequence),
@@ -331,7 +333,7 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
         voice_id: voice,
         voice_definition: rest.length > 0 ? rest.join(' ') : `"${voice}" as supplied by the person through /textprov claim`,
         basis: 'user_command',
-        policy_version: POLICY,
+        policy_version: (await read($, adapter)) ?? ADAPTER,
         supporting_ids: [],
       })
       return ran.ok ? `claim ${String(ran.result)} recorded on ${short(id)} [${start}, ${end}) for ${voice}` : ran.error
@@ -348,10 +350,15 @@ export const register: Register = (on, options) => {
       description: 'TextProv attribution chronicle: list, status, inspect, match, claim',
       argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <voice>]',
     })
+    const id = await $.session.id()
+    // The adapter string is pinned at the session's first load. A hot reload
+    // of a newer module keeps recording under it, so the chronicle's duplicate
+    // check (scope, adapter, delivery key) holds for the whole session.
+    await update($, adapter, current => current ?? ADAPTER)
     // A resumed session keeps its id but not this module's counter; the chronicle
     // already holds this session's last capture_sequence, so the counter continues
     // from it and no `prompt:N` key is minted twice in the session's scope.
-    const seeded = await bridge($, options, { operation: 'session', provider: PROVIDER, session_id: await $.session.id() })
+    const seeded = await bridge($, options, { operation: 'session', provider: PROVIDER, session_id: id })
     const last = seeded.ok ? (seeded.result as { last_sequence?: unknown }).last_sequence : undefined
     if (typeof last === 'number') {
       await update($, sequence, n => Math.max(n, last))

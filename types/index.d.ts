@@ -69,6 +69,8 @@ declare module 'claude-code' {
       sequence: number
       pending: TextprovPending | null
       turns: Record<string, TextprovTurn>
+      /** The adapter string every record of this session carries, pinned at the first load; a hot reload keeps it. */
+      adapter: string | null
       /** Captures the bridge never answered (an interrupt killed it), retried at the next event. */
       backlog: TextprovCapture[]
     }
