@@ -34,6 +34,8 @@ type Capture = {
   agentId?: string
   tool?: string
   path?: string
+  /** A capture_sequence already taken for this event; otherwise the next one is taken here. */
+  sequence?: number
 }
 
 async function nextSequence($: EngineInterface): Promise<number> {
@@ -48,12 +50,17 @@ function scalars(text: string): number {
   return count
 }
 
+async function fail($: EngineInterface, key: string, error: string): Promise<void> {
+  const failed = await update($, failures, list => [...list, { key, error }].slice(-KEEP))
+  $.ui.status(`textprov: ${failed.length} capture failure${failed.length === 1 ? '' : 's'}`)
+}
+
 async function observe(
   $: EngineInterface,
   options: PluginOptions,
   capture: Capture,
 ): Promise<string | undefined> {
-  const seq = await nextSequence($)
+  const seq = capture.sequence ?? (await nextSequence($))
   const host = await $.session.version()
   const ran = await bridge($, options, {
     operation: 'observe',
@@ -72,9 +79,7 @@ async function observe(
     capture_sequence: seq,
   })
   if (!ran.ok || typeof ran.result !== 'string') {
-    const error = ran.ok ? 'bridge answered no observation id' : ran.error
-    const failed = await update($, failures, list => [...list, { key: capture.key, error }].slice(-KEEP))
-    $.ui.status(`textprov: ${failed.length} capture failure${failed.length === 1 ? '' : 's'}`)
+    await fail($, capture.key, ran.ok ? 'bridge answered no observation id' : ran.error)
     return undefined
   }
   const row: TextprovObservation = {
@@ -276,6 +281,20 @@ export const register: Register = (on, options) => {
       description: 'TextProv attribution chronicle: list, status, inspect, match, claim',
       argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <voice>]',
     })
+    // A resumed session keeps its id but not this module's counter; the chronicle
+    // already holds this session's last capture_sequence, so the counter continues
+    // from it and no `prompt:N` key is minted twice in the session's scope.
+    const seeded = await bridge($, options, {
+      operation: 'sequence',
+      provider: PROVIDER,
+      session_id: await $.session.id(),
+    })
+    if (seeded.ok && typeof seeded.result === 'number') {
+      const last = seeded.result
+      await update($, sequence, n => Math.max(n, last))
+    } else if (!seeded.ok) {
+      await fail($, 'session', seeded.error)
+    }
     return next(e)
   })
 
@@ -288,17 +307,20 @@ export const register: Register = (on, options) => {
   })
 
   // A submission is observed as it enters the turn, after every rewrite above
-  // and beneath. Slash commands and hidden prompts are not submissions.
+  // and beneath. Slash commands and hidden prompts are not submissions. The key
+  // carries the same number the record keeps as capture_sequence.
   on('prompt.submit', async ($, e, next) => {
     const ran = await next(e)
     if (e.command !== undefined || e.isMeta === true || ran.drop !== undefined) return ran
+    const seq = await nextSequence($)
     await observe($, options, {
-      key: `prompt:${await nextSequence($)}`,
+      key: `prompt:${seq}`,
       kind: 'submission',
       channel: 'user',
       visibility: 'stored',
       text: ran.text,
       hostIds: e.turnId === undefined ? {} : { turn: e.turnId },
+      sequence: seq,
     })
     return ran
   })

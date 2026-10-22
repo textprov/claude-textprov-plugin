@@ -21,12 +21,15 @@ function engine(on: On, requests: Request[], answer?: (request: Request) => unkn
   on('process.run', (_, e) => {
     const request = JSON.parse(e.init?.stdin ?? '{}') as Request
     requests.push(request)
-    const result = answer?.(request) ?? (request.operation === 'observe' ? `obs-${++minted}` : {})
+    const given = answer?.(request)
+    const result = given !== undefined ? given : request.operation === 'observe' ? `obs-${++minted}` : request.operation === 'sequence' ? 0 : {}
     return {
       value: { exitCode: 0, stdout: JSON.stringify({ result }), stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
     }
   })
 }
+
+const observed = (requests: Request[]) => requests.filter(one => one.operation === 'observe')
 
 test('a submission is observed as stored user text, with no claim', async ($, on) => {
   const requests: Request[] = []
@@ -34,16 +37,43 @@ test('a submission is observed as stored user text, with no claim', async ($, on
   await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true })
   await $.prompt.submit({ text: 'Keep the original wording.', wait: false, origin: ORIGIN })
 
-  expect(requests.length).toBe(1)
-  const observed = requests[0]!
-  expect(observed.operation).toBe('observe')
-  expect(observed.event_kind).toBe('submission')
-  expect(observed.channel).toBe('user')
-  expect(observed.visibility).toBe('stored')
-  expect(observed.text).toBe('Keep the original wording.')
-  expect(observed.session_id).toBe('session-test')
-  expect(observed.provider).toBe('claude')
-  expect(observed.completeness).toBe('complete')
+  const captured = observed(requests)
+  expect(captured.length).toBe(1)
+  const one = captured[0]!
+  expect(one.event_kind).toBe('submission')
+  expect(one.channel).toBe('user')
+  expect(one.visibility).toBe('stored')
+  expect(one.text).toBe('Keep the original wording.')
+  expect(one.session_id).toBe('session-test')
+  expect(one.provider).toBe('claude')
+  expect(one.completeness).toBe('complete')
+})
+
+test('the submission key carries its capture sequence', async ($, on) => {
+  const requests: Request[] = []
+  engine(on, requests)
+  await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true })
+  await $.prompt.submit({ text: 'hello', wait: false, origin: ORIGIN })
+  await $.prompt.submit({ text: 'again', wait: false, origin: ORIGIN })
+
+  const [first, second] = observed(requests)
+  expect(first!.delivery_key).toBe('prompt:1')
+  expect(first!.capture_sequence).toBe(1)
+  expect(second!.delivery_key).toBe('prompt:2')
+  expect(second!.capture_sequence).toBe(2)
+})
+
+test('the sequence continues from the chronicle when a session is loaded again', async ($, on) => {
+  const requests: Request[] = []
+  engine(on, requests, request => (request.operation === 'sequence' ? 7 : undefined))
+  await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true })
+  expect(requests[0]!.operation).toBe('sequence')
+  expect(requests[0]!.session_id).toBe('session-test')
+  await $.prompt.submit({ text: 'again', wait: false, origin: ORIGIN })
+
+  const [submission] = observed(requests)
+  expect(submission!.delivery_key).toBe('prompt:8')
+  expect(submission!.capture_sequence).toBe(8)
 })
 
 test('a slash command is not a submission', async ($, on) => {
@@ -51,7 +81,7 @@ test('a slash command is not a submission', async ($, on) => {
   engine(on, requests)
   await $.session.start({ cwd: '/project', surface: 'terminal', isInteractive: true })
   await $.prompt.submit({ text: '/textprov', command: { name: 'textprov', args: '' }, wait: false, origin: ORIGIN })
-  expect(requests.length).toBe(0)
+  expect(observed(requests).length).toBe(0)
 })
 
 test('a Write is observed as a call and a result joined by tool_call', async ($, on) => {
@@ -126,6 +156,7 @@ test('a bridge failure is reported, never silently dropped', async ($, on) => {
 
   const listed = await $.command.run({ command: 'textprov', args: 'list', origin: ORIGIN, presentation: PRESENTATION })
   expect(listed.text).toContain('0 observations this session')
-  expect(listed.text).toContain('1 capture failure')
+  // One failure for the sequence seed at session start, one for the submission.
+  expect(listed.text).toContain('2 capture failures')
   expect(listed.text).toContain('no chronicle module')
 })
