@@ -27,6 +27,8 @@ const MAIN = 'main'
 const RETRY_MS = 500
 /** How many times a capture is handed to the bridge before it is given up as a failure. */
 const ATTEMPTS = 3
+/** A pasted block as the host wraps it in the prompt text. */
+const PASTE = /<pasted_content id="([^"]+)">([\s\S]*?)<\/pasted_content id="\1">/g
 
 const observations = atom({ plugin: 'textprov', key: 'observations' } as const, [] as TextprovObservation[])
 const failures = atom({ plugin: 'textprov', key: 'failures' } as const, [] as TextprovFailure[])
@@ -396,6 +398,19 @@ export const register: Register = (on, options) => {
       hostIds,
       sequence: seq,
     })
+    // Each pasted block is also recorded on its own, exactly as the host
+    // delivered it inside its wrapper, so a later layer can look for its source
+    // without the wrapper in the way.
+    for (const [, id, body] of ran.text.matchAll(PASTE)) {
+      await observe($, options, {
+        key: `${key}:paste:${id}`,
+        kind: 'pasted_block',
+        channel: 'user',
+        visibility: 'stored',
+        text: body!,
+        hostIds: { prompt: key, paste: id! },
+      })
+    }
     return ran
   })
 

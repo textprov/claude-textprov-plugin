@@ -6,7 +6,7 @@ export type TextprovObservation = {
   id: string
   /** The adapter's delivery key, stable per event. */
   key: string
-  /** The chronicle's event_kind: submission, tool_call, tool_anchor, tool_result, assistant_message. */
+  /** The chronicle's event_kind: submission, pasted_block, tool_call, tool_anchor, tool_result, assistant_message. */
   kind: string
   /** Where the text arrived: user, assistant, tool, engine. */
   channel: string

@@ -108,6 +108,23 @@ test('a prompt typed while a turn runs records that turn as submitted_during, ne
   expect((queued!.host_ids as Ids).turn).toBeUndefined()
 })
 
+test('a pasted block is also recorded on its own, joined to the submission', async ($, on) => {
+  const requests: Request[] = []
+  engine(on, requests)
+  await $.session.start(SESSION)
+  const text = 'Look at this:\n<pasted_content id="ab12">\nquoted line\n</pasted_content id="ab12">\nthoughts?'
+  await $.prompt.submit({ text, wait: false, origin: ORIGIN })
+
+  const [submission, paste] = observed(requests)
+  expect(submission!.text).toBe(text)
+  expect(paste!.event_kind).toBe('pasted_block')
+  expect(paste!.channel).toBe('user')
+  expect(paste!.text).toBe('\nquoted line\n')
+  expect(paste!.delivery_key).toBe('prompt:1:paste:ab12')
+  expect((paste!.host_ids as Ids).prompt).toBe('prompt:1')
+  expect((paste!.host_ids as Ids).paste).toBe('ab12')
+})
+
 test('the sequence continues from the chronicle when a session is loaded again', async ($, on) => {
   const requests: Request[] = []
   engine(on, requests, request => (request.operation === 'session' ? { observations: 7, last_sequence: 7 } : undefined))
