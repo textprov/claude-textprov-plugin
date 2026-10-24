@@ -39,7 +39,7 @@ export type TextprovCapture = {
   completeness?: 'complete' | 'partial' | 'truncated' | 'unobserved'
   hostIds?: Record<string, string>
   /** Bounded adapter facts, separate from the text and host-ID joins. */
-  attributes?: Record<string, boolean>
+  attributes?: Record<string, boolean | string | null>
   agentId?: string
   tool?: string
   path?: string

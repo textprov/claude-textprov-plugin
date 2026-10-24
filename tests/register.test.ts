@@ -85,8 +85,9 @@ test('a submission is observed as stored user text, with no claim', async ($, on
   expect(one.text).toBe('Keep the original wording.')
   expect(one.session_id).toBe('session-test')
   expect(one.provider).toBe('claude')
-  expect(one.adapter).toBe('claude-textprov-plugin/0.1.2')
+  expect(one.adapter).toBe('claude-textprov-plugin/0.1.3')
   expect(one.completeness).toBe('complete')
+  expect(one.attributes).toEqual({ prompt_origin: 'composer' })
 })
 
 test('a slash command is not a submission', async ($, on) => {
@@ -94,6 +95,60 @@ test('a slash command is not a submission', async ($, on) => {
   engine(on, f)
   await $.session.start(SESSION)
   await $.prompt.submit({ text: '/textprov', command: { name: 'textprov', args: '' }, wait: false, origin: ORIGIN })
+  expect(observed(f.requests).length).toBe(0)
+})
+
+test('notification-shaped composer text and an unmarked notification retain their payloads without claims', async ($, on) => {
+  const f = fixture()
+  engine(on, f)
+  await $.session.start(SESSION)
+  const text = '<task-notification>\n<task-id>pasted-example</task-id>\n<summary>Quoted text 🧪</summary>\n</task-notification>'
+  const typed = await $.prompt.submit({ text, wait: false, origin: ORIGIN })
+  const delivered = await $.prompt.submit({ text, wait: false, origin: { kind: 'task-notification' } })
+
+  expect(typed.text).toBe(text)
+  expect(delivered.text).toBe(text)
+  const captures = observed(f.requests)
+  expect(captures.length).toBe(2)
+  for (const captured of captures) {
+    expect(captured.event_kind).toBe('submission')
+    expect(captured.channel).toBe('user')
+    expect(captured.visibility).toBe('stored')
+    expect(captured.text).toBe(text)
+  }
+  expect(captures[0]!.delivery_key).not.toBe(captures[1]!.delivery_key)
+  expect(captures[0]!.attributes).toEqual({ prompt_origin: 'composer' })
+  expect(captures[1]!.attributes).toEqual({ prompt_origin: 'task-notification' })
+  expect(f.requests.filter(one => one.operation !== 'observe' && one.operation !== 'session').length).toBe(0)
+})
+
+test('a submission without a native origin records explicit null rather than guessing from its wrapper', async ($, on) => {
+  const f = fixture()
+  engine(on, f)
+  await $.session.start(SESSION)
+  const text = '<task-notification>\n<pasted_content id="unstamped">quoted text</pasted_content id="unstamped">\n</task-notification>'
+  // The current host types require origin; an unstamped/older delivery may lack it.
+  // @ts-expect-error Exercise the runtime boundary when a native origin is unavailable.
+  const delivered = await $.prompt.submit({ text, wait: false })
+
+  expect(delivered.text).toBe(text)
+  const captures = observed(f.requests)
+  expect(captures.length).toBe(2)
+  expect(captures[0]!.text).toBe(text)
+  expect(captures[0]!.attributes).toEqual({ prompt_origin: null })
+  expect(captures[1]!.text).toBe('quoted text')
+  expect(captures[1]!.attributes).toEqual({ prompt_origin: null })
+  expect(f.requests.filter(one => one.operation !== 'observe' && one.operation !== 'session').length).toBe(0)
+})
+
+test('a host-marked meta prompt is forwarded without being captured', async ($, on) => {
+  const f = fixture()
+  engine(on, f)
+  await $.session.start(SESSION)
+  const text = '<task-notification>hidden delivery</task-notification>'
+  const delivered = await $.prompt.submit({ text, isMeta: true, wait: false, origin: { kind: 'task-notification' } })
+
+  expect(delivered.text).toBe(text)
   expect(observed(f.requests).length).toBe(0)
 })
 
@@ -156,6 +211,8 @@ test('a pasted block is also recorded on its own, joined to the submission', asy
   expect(paste!.delivery_key).toBe(`${String(submission!.delivery_key)}:paste:ab12`)
   expect((paste!.host_ids as Ids).prompt).toBe(submission!.delivery_key)
   expect((paste!.host_ids as Ids).paste).toBe('ab12')
+  expect(submission!.attributes).toEqual({ prompt_origin: 'composer' })
+  expect(paste!.attributes).toEqual({ prompt_origin: 'composer' })
 })
 
 test('the sequence continues from the chronicle when a session is loaded again', async ($, on) => {
@@ -299,8 +356,8 @@ test('the list command shows what was captured and the status command adds the p
 
   const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
   expect(status.text).toContain('"available": true')
-  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.2"')
-  expect(status.text).toContain('"loaded_version": "0.1.2"')
+  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.3"')
+  expect(status.text).toContain('"loaded_version": "0.1.3"')
   expect(status.text).toContain('"session_id": "session-test"')
   expect(status.text).toContain('"host_version": "0.0.0-test"')
   expect(status.text).toContain('"observations": 1')
@@ -375,7 +432,7 @@ test('inspection and explicit claim support forward cross-agent consent', async 
   expect(claim.content_hash).toBe('current-hash')
   expect(claim.voice_definition).toBe('definition with --literal')
   expect(claim.basis).toBe('user_command')
-  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.2')
+  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.3')
 })
 
 test('invalid comparison and claim flags are refused before comparison or claims', async ($, on) => {

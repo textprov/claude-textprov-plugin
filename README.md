@@ -14,7 +14,7 @@ transcripts or tool inputs, and it never decides who wrote anything: host IDs co
 events, matching proposes candidate passages, and only an explicit `/textprov claim`
 assigns attribution. Everything else stays `Voice0`.
 
-Version: 0.1.2 (local development). Status: prototype, step 3 and 5 of the
+Version: 0.1.3 (local development). Status: prototype, step 3 and 5 of the
 [plugin design's implementation sequence](https://github.com/textprov/textprov/blob/main/docs/development/plugin-prototype.md).
 Explicit experimental export returns classification text and its companion report.
 Stored-row capture remains outside this prototype.
@@ -91,7 +91,7 @@ Status reports the process's `capture_namespace` separately from its native sess
 
 | Event | Observation | Correlation |
 | --- | --- | --- |
-| A prompt you submit | `submission`, channel `user`, visibility `stored`, the text as it entered the turn | `prompt` (its own key, `prompt:<namespace>:N`); `submitted_during` names the turn that was running when you typed it |
+| A non-command prompt delivered through `prompt.submit` without `isMeta` | `submission`, channel `user`, visibility `stored`, the text as it entered the session | `prompt` (its own key, `prompt:<namespace>:N`); `submitted_during` names the turn running when it was submitted |
 | A block you pasted into a prompt | `pasted_block`, channel `user`, visibility `stored`: the block exactly as the host delivered it inside its `<pasted_content>` wrapper | `prompt` (the submission's key) and `paste` (the wrapper's id) |
 | `Write` or `Edit` tool input | `tool_call`, channel `assistant`, visibility `model`: the written content or the new string | `tool_call` (the tool_use id), `path`, and the running `turn` |
 | An `Edit`'s `old_string` | `tool_anchor`, channel `assistant`, visibility `model`: the text the assistant quoted from the file to place the edit | the same `tool_call`, `path` and `turn` |
@@ -116,11 +116,29 @@ in the agent's own scope and carries the agent id as `agent`. The `agent_task` r
 the parent's scope carries the same id. `inspect <id> --cross-agent` shows these
 joins within the same provider and session. Inspection defaults to one agent's scope.
 
-Slash commands and hidden prompts are not submissions. Other tools (Bash, MultiEdit,
-NotebookEdit, MCP tools) are not observed yet; the gap is deliberate and visible, not
-filled by guessing. Each Edit capture records `attributes.replace_all` (false when
-omitted by the host). It records the requested operation, not a count of actual
-replacements. An aborted turn that produced no text leaves no answer row.
+The plugin excludes slash commands and prompts the host marks `isMeta: true`. Other
+non-command `prompt.submit` deliveries are captured as submissions, including task
+notifications when the host delivers them without that flag. `submission` and
+channel `user` describe the transport; they do not establish that a person typed or
+authored the text. Text such as `<task-notification>` can also be pasted by a person
+and is preserved without inferring its source or a voice.
+
+Claude Code 2.1.310's generated function-hook declarations expose an engine-stamped
+`origin.kind`, including `composer` and `task-notification`. Submissions and their
+pasted blocks record that value in `attributes.prompt_origin`, or `null` when the
+host supplies no origin. Capture does not filter by origin. The separate settings-hook
+`UserPromptSubmit` event declares an optional `source`; it is not a field of this
+module's `prompt.submit` input. Origin is a host classification, separate from attribution.
+The completed 2026-10-23 local trial used plugin 0.1.2 at commit
+`70b7579d81034cee2458fd9d789847edf3d0285e` with Claude Code 2.1.310. It verified native
+notification text in the chronicle but did not instrument the function-hook origin
+of those deliveries. The new origin metadata needs a separate trial of 0.1.3.
+
+Other tools (Bash, MultiEdit, NotebookEdit, MCP tools) are not observed yet; the gap
+is deliberate and visible, not filled by guessing. Each Edit capture records
+`attributes.replace_all` (false when omitted by the host). It records the requested
+operation, not a count of actual replacements. An aborted turn that produced no text
+leaves no answer row.
 
 Raw text goes into the core's bounded cache (1 MiB, one hour by default, a policy the
 first opener of a database sets). Metadata, ID joins and claims persist. An observation
@@ -128,7 +146,11 @@ whose text has expired still inspects; it just cannot be matched or newly claime
 `inspect` reports `content_expires_at`, so you can see how long a claim stays possible.
 
 The status line shows `N observed`, then `N failed` and `N to retry` when there are
-any; the host labels the line with the plugin's name. A failure (bridge not found, core
+any; the host labels the line with the plugin's name. Claude Code 2.1.310 also renders
+a warning glyph on this line when failures and retries are zero. The plugin sends
+only the count text through `ui.status`; that API exposes no severity or glyph
+option. Use the explicit `failed` and `to retry` counts, or `/textprov status`'s
+`failures` and `to_retry`, to assess capture problems. A failure (bridge not found, core
 missing, a core refusal) is listed by `/textprov`, kept in the plugin's store for the
 session, and never blocks the prompt or the tool. When the person interrupts a turn
 (a "No" at a permission prompt does this), the host kills the bridge process of any
@@ -277,7 +299,7 @@ write its type declarations to `.claude-plugin/types/`; after that `tsc -p .`
 type-checks the module and tests. That folder is ignored by git.
 
 After the checks pass, start a separate feedback-only trial with the frozen
-plugin 0.1.2 and compatible core. Run `/textprov status` first and record its output
+plugin 0.1.3 and compatible core. Run `/textprov status` first and record its output
 unchanged, all component versions/commits, database observations, evidence and gaps
 in `../trials/YYYY-MMDD-N-<topic>.md` (`N` counts trials on that date). Check:
 
@@ -291,6 +313,8 @@ in `../trials/YYYY-MMDD-N-<topic>.md` (`N` counts trials on that date). Check:
 - Explicitly select a passage/source claims, resolve gaps/conflicts, and export with
   supplied voice classifications and loss acknowledgement; retain the companion report.
 - Observe the status glyph with zero failures and an interrupted partial answer.
+- Compare a native task notification's `attributes.prompt_origin` with identical
+  notification-shaped text pasted by a person; verify the text and claims stay unchanged.
 
 Engine and bridge tests establish local behavior; the trial establishes what the
 installed Claude Code build actually delivers. Keep fixes in a later development

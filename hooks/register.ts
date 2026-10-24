@@ -16,7 +16,7 @@ import { bridge } from './bridge'
 // person makes one with `/textprov claim`.
 
 const PROVIDER = 'claude'
-const VERSION = '0.1.2' // keep in step with .claude-plugin/plugin.json
+const VERSION = '0.1.3' // keep in step with .claude-plugin/plugin.json
 const ADAPTER = `claude-textprov-plugin/${VERSION}`
 const COMMAND = 'textprov'
 const KEEP = 500
@@ -554,9 +554,10 @@ export const register: Register = (on, options) => {
     }
   })
 
-  // A submission is observed as it enters the turn, after every rewrite above
-  // and beneath. Slash commands and hidden prompts are not submissions. The key
-  // carries the same number the record keeps as capture_sequence.
+  // A submission is observed after every rewrite above and beneath. Commands
+  // and prompts the host marks isMeta are excluded; other prompt.submit
+  // deliveries are transport observations, not evidence of a person's authorship.
+  // The key carries the same number the record keeps as capture_sequence.
   //
   // The engine may start the turn inside `next(e)` (a headless run does), so
   // the submission is announced as pending before `next`, and the turn that
@@ -586,6 +587,10 @@ export const register: Register = (on, options) => {
     }
     const started = await runningTurn($, undefined)
     const hostIds: Record<string, string> = { prompt: key }
+    // The engine's ingress classification is a transport fact, not a voice.
+    // Older/unstamped deliveries remain explicitly unknown; never parse text
+    // wrappers to decide whether the person or a background task sent it.
+    const attributes = { prompt_origin: e.origin?.kind ?? null }
     if (started?.submission === key) hostIds.turn = started.turnId
     else if (e.turnId !== undefined) hostIds.submitted_during = e.turnId
     await observe($, options, {
@@ -595,6 +600,7 @@ export const register: Register = (on, options) => {
       visibility: 'stored',
       text: ran.text,
       hostIds,
+      attributes,
       sequence: seq,
     })
     // Each pasted block is also recorded on its own, exactly as the host
@@ -608,6 +614,7 @@ export const register: Register = (on, options) => {
         visibility: 'stored',
         text: body!,
         hostIds: { prompt: key, paste: id! },
+        attributes,
       })
     }
     return ran

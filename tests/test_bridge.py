@@ -4,6 +4,7 @@ The core comes from TEXTPROV_PYTHON, or from a sibling checkout at
 ../../textprov/python; the suite is skipped when neither holds textprov/chronicle.py.
 """
 
+import hashlib
 import json
 import os
 import subprocess
@@ -97,6 +98,22 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(self.ok({"operation": "session", "provider": "claude", "session_id": "s1"}),
                          {"observations": 2, "last_sequence": 2})
         self.assertEqual(self.ok({"operation": "session", "provider": "claude", "session_id": "s3"}), empty)
+
+    def test_notification_shaped_submission_retains_its_hash_and_unknown_voice(self):
+        text = '<task-notification>\n<summary>Quoted text 🧪</summary>\n</task-notification>'
+        for origin in ("composer", "task-notification", None):
+            with self.subTest(origin=origin):
+                observation = self.ok(dict(self.common("notification-shaped-%s" % origin, text),
+                                           attributes={"prompt_origin": origin}))
+                info = self.ok({"operation": "inspect", "observation_id": observation})
+                self.assertEqual(info["attributes"], {"prompt_origin": origin})
+                self.assertEqual(info["content_hash"], hashlib.sha256(text.encode("utf-8")).hexdigest())
+                self.assertEqual(info["scalar_length"], len(text))
+                self.assertEqual(info["claims"], [])
+                resolved = self.ok({"operation": "resolve", "observation_id": observation,
+                                    "content_hash": info["content_hash"]})
+                self.assertEqual([entry["range"] for entry in resolved["ranges"]], [[0, len(text)]])
+                self.assertIsNone(resolved["ranges"][0]["voice_id"])
 
     def test_inspect_says_when_the_text_expires(self):
         observation = self.ok(self.common("k1", "A passage"))
