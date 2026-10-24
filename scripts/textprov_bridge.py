@@ -12,12 +12,24 @@ import hashlib
 import json
 import os
 import platform
-import sqlite3
+import inspect
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-OPERATIONS = ("observe", "match", "claim")
+OPERATIONS = ("observe", "match", "claim", "inspect", "transfer", "resolve", "export", "list_observations")
+MIN_CORE = (0, 1, 5)
+REQUIRED_PARAMETERS = {
+    "observe": ("attributes",), "session": ("provider", "session_id"),
+    "status": (), "inspect": ("cross_agent",),
+    "match": ("policy", "partial", "min_match_chars", "cross_agent"),
+    "claim": ("cross_agent", "supporting_ids"),
+    "transfer": ("candidate_index", "source_claim_ids", "source_hash", "target_hash", "cross_agent"),
+    "resolve": ("observation_id", "content_hash"),
+    "export": ("observation_id", "content_hash", "voice_states", "allow_lossy"),
+    "list_observations": ("provider", "session_id", "agent_id", "cross_agent", "limit", "before_id"),
+}
 
 
 def data_directory(given):
@@ -50,6 +62,16 @@ def load_core(checkout):
             "textprov at %s has no chronicle module (%s); set textprov_python to a "
             "checkout's python/ directory that has textprov/chronicle.py" % (textprov.__file__, error)
         )
+    version = getattr(textprov, "__version__", None)
+    parsed = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:\+[^\s]+)?", version or "")
+    if parsed is None or tuple(map(int, parsed.groups())) < MIN_CORE:
+        raise RuntimeError("TextProv core 0.1.5 or newer is required; loaded %s from %s" %
+                           (str(version)[:80], textprov.__file__))
+    for method, parameters in REQUIRED_PARAMETERS.items():
+        implementation = getattr(getattr(chronicle, "Chronicle", None), method, None)
+        if not callable(implementation) or any(
+                name not in inspect.signature(implementation).parameters for name in parameters):
+            raise RuntimeError("TextProv core has an incompatible Chronicle.%s API; core 0.1.5 or newer is required" % method)
     return textprov, chronicle
 
 
@@ -73,42 +95,38 @@ def status(args, database):
         "available": True,
         "module": textprov.__file__,
         "version": getattr(textprov, "__version__", None),
+        "minimum_version": "0.1.5",
     }
     if database.exists():
         with chronicle.Chronicle(database) as instance:
-            counts = {}
-            for table in ("observations", "claims", "cache"):
-                counts[table] = instance.db.execute("SELECT COUNT(*) FROM " + table).fetchone()[0]
-            report["counts"] = counts
-            report["cache_policy"] = {"max_bytes": instance.max_bytes, "ttl_seconds": instance.ttl}
+            state = instance.status()
+            report["counts"] = {"observations": state["observation_count"],
+                                "claims": state["claim_count"], "cache": state["cached_observation_count"]}
+            report["cache_policy"] = {"max_bytes": state["max_bytes"], "ttl_seconds": state["ttl_seconds"]}
+            report["cached_bytes"] = state["cached_bytes"]
     return report
 
 
-def session_state(database, provider, session_id):
+def session_state(database, chronicle, provider, session_id):
     """What the chronicle holds for one session across its agents: its row count and highest capture_sequence.
 
-    Read-only on purpose: asking never creates the database. The hooks module
+    Asking never creates the database. The hooks module
     continues its counter from ``last_sequence`` when a resumed session loads it
     again, and reports ``observations`` beside its own per-process count.
     """
     if not database.exists():
         return {"observations": 0, "last_sequence": 0}
-    db = sqlite3.connect("file:%s?mode=ro" % database, uri=True)
-    try:
-        row = db.execute("""SELECT COUNT(*), MAX(json_extract(record, '$.capture_sequence')) FROM observations
-            WHERE json_extract(record, '$.provider') = ? AND json_extract(record, '$.session_id') = ?""",
-                         (provider, session_id)).fetchone()
-    finally:
-        db.close()
-    return {"observations": int(row[0]), "last_sequence": int(row[1] or 0)}
+    with chronicle.Chronicle(database) as instance:
+        state = instance.session(provider, session_id)
+    return {"observations": state["observation_count"], "last_sequence": state["max_capture_sequence"] or 0}
 
 
-def inspect(instance, observation_id):
-    """The core's inspection plus when its cached text expires, so a person knows how long a claim stays possible."""
-    report = instance.inspect(observation_id)
-    row = instance.db.execute("SELECT expires FROM cache WHERE observation_id = ?", (observation_id,)).fetchone()
-    report["content_expires_at"] = None if row is None else (
-        datetime.fromtimestamp(row[0], timezone.utc).isoformat(timespec="seconds"))
+def inspection(instance, **request):
+    """Keep the command's ISO 8601 expiry presentation over the public core API."""
+    report = instance.inspect(**request)
+    expires = report["content_expires_at"]
+    report["content_expires_at"] = None if expires is None else (
+        datetime.fromtimestamp(expires, timezone.utc).isoformat(timespec="seconds"))
     return report
 
 
@@ -128,15 +146,15 @@ def main(argv=None):
         if operation == "status":
             result = status(args, database)
         elif operation == "session":
-            result = session_state(database, request["provider"], request["session_id"])
-        elif operation == "inspect":
             _, chronicle = load_core(args.textprov_python)
-            with chronicle.Chronicle(database) as instance:
-                result = inspect(instance, request["observation_id"])
+            result = session_state(database, chronicle, request["provider"], request["session_id"])
         elif operation in OPERATIONS:
             _, chronicle = load_core(args.textprov_python)
-            with chronicle.Chronicle(database) as instance:
-                result = getattr(instance, operation)(**request)
+            if operation == "list_observations" and not database.exists():
+                result = {"observations": [], "next_before_id": None}
+            else:
+                with chronicle.Chronicle(database) as instance:
+                    result = inspection(instance, **request) if operation == "inspect" else getattr(instance, operation)(**request)
         else:
             raise ValueError("unknown operation: %r" % (operation,))
         print(json.dumps({"result": result}, ensure_ascii=False, sort_keys=True))

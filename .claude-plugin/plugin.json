@@ -1,7 +1,7 @@
 {
   "name": "textprov",
   "displayName": "TextProv attribution chronicle",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Records prompt, Write/Edit and final-answer observations in the shared TextProv attribution chronicle and exposes /textprov for inspection, matching and explicit claims.",
   "author": { "name": "TextProv contributors", "url": "https://textprov.org" },
   "homepage": "https://github.com/textprov/textprov",

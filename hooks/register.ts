@@ -16,7 +16,7 @@ import { bridge } from './bridge'
 // person makes one with `/textprov claim`.
 
 const PROVIDER = 'claude'
-const VERSION = '0.1.1' // keep in step with .claude-plugin/plugin.json
+const VERSION = '0.1.2' // keep in step with .claude-plugin/plugin.json
 const ADAPTER = `claude-textprov-plugin/${VERSION}`
 const COMMAND = 'textprov'
 const KEEP = 500
@@ -39,6 +39,7 @@ const turns = atom({ plugin: 'textprov', key: 'turns' } as const, {} as Record<s
 const adapter = atom({ plugin: 'textprov', key: 'adapter' } as const, null as string | null)
 const backlog = atom({ plugin: 'textprov', key: 'backlog' } as const, [] as TextprovCapture[])
 const since = atom({ plugin: 'textprov', key: 'since' } as const, null as string | null)
+const captureNamespace = atom({ plugin: 'textprov', key: 'captureNamespace' } as const, null as string | null)
 
 async function nextSequence($: EngineInterface): Promise<number> {
   let value = 0
@@ -91,6 +92,7 @@ async function observe($: EngineInterface, options: PluginOptions, capture: Text
     completeness: capture.completeness ?? (capture.text === null ? 'unobserved' : 'complete'),
     text: capture.text,
     host_ids: capture.hostIds ?? {},
+    attributes: capture.attributes ?? {},
     capture_sequence: seq,
   })
   if (!ran.ok) {
@@ -158,6 +160,7 @@ async function captureTool(
   path: string,
   run: () => Promise<ToolCallResult>,
   anchor?: string,
+  attributes?: Record<string, boolean>,
 ): Promise<ToolCallResult> {
   await flush($, options)
   const turn = await runningTurn($, e.agentId)
@@ -167,7 +170,7 @@ async function captureTool(
     ...(turn === undefined ? {} : { turn: turn.turnId }),
     ...loopIds(e.agentId),
   }
-  const common = { agentId: e.agentId, tool: e.tool, path }
+  const common = { agentId: e.agentId, tool: e.tool, path, attributes }
   const captures = [
     observe($, options, {
       key: `${e.tool_use_id}:call`,
@@ -225,22 +228,32 @@ async function captureTool(
 }
 
 const CLAIM_USAGE = [
-  'usage: /textprov claim <id> <start> <end> <voice-id> [definition...]',
+  'usage: /textprov claim <id> <start> <end> <voice-id> [definition...] [--support <id>] [--cross-agent]',
   '  records that scalars [start, end) of the observation belong to a voice.',
   '  start and end count Unicode scalars from 0, end excluded, on grapheme boundaries;',
   '  inspect shows scalar_length. voice-id is a TextProv voice such as Voice1;',
   '  Voice0 is unattributed text and needs no claim. The definition says who the voice is.',
   '  example: /textprov claim 5410ad26 0 152 Voice1 the person typing at the prompt',
+  '  --support may be repeated; --cross-agent permits support within this provider/session.',
+  '  use -- before a definition containing words that begin with --.',
 ].join('\n')
 
 const HELP = [
   '/textprov                      list what this process captured',
+  '/textprov list --session [--cross-agent] [--limit N] [--before <id>]',
+  '                               page durable session metadata with full observation IDs',
   '/textprov status               bridge, core, database and plugin state',
-  '/textprov inspect <id>         metadata, ID joins, claims and text expiry of one observation',
-  '/textprov match <src> <dst>    exact occurrences of the source block in the target',
+  '/textprov inspect <id> [--cross-agent]    metadata, ID joins, claims and text expiry',
+  '/textprov match <src> <dst> [--policy exact-v1|line-endings-v1|common-indent-v1]',
+  '                               [--partial] [--min-chars N] [--cross-agent]',
   '/textprov claim <id> <start> <end> <voice-id> [definition...]',
   '                               record an explicit attribution claim on a scalar range',
+  '/textprov transfer <JSON>      accept a selected passage and selected supplied claims',
+  '/textprov resolve <JSON>       show resolved claims and unattributed gaps',
+  '/textprov export <JSON>        return experimental classification text and its report',
   'IDs may be unambiguous prefixes of observation IDs listed by /textprov.',
+  'Matching defaults to exact-v1, full source, minimum 16 scalars for partial candidates.',
+  'Cross-agent operations stay within one provider/session; no match creates a claim.',
   CLAIM_USAGE,
 ].join('\n')
 
@@ -255,6 +268,17 @@ async function resolve($: EngineInterface, given: string): Promise<string> {
   if (hits.length > 1) throw new Error(`"${given}" matches ${hits.length} observations; give more characters`)
   if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(given)) return given
   throw new Error(`no observation matches "${given}" in this process's list; an older one needs its full ID`)
+}
+
+/** A full UUID is an identifier, never permission to read another session. */
+async function scopedInspection($: EngineInterface, options: PluginOptions, id: string, crossAgent: boolean): Promise<Record<string, unknown>> {
+  const ran = await bridge($, options, { operation: 'inspect', observation_id: id, cross_agent: crossAgent })
+  if (!ran.ok) throw new Error(ran.error)
+  if (ran.result === null || typeof ran.result !== 'object') throw new Error('core returned no observation metadata')
+  const info = ran.result as Record<string, unknown>
+  if (info.provider !== PROVIDER || info.session_id !== (await $.session.id())) throw new Error('observation is outside the current Claude provider/session')
+  if (!crossAgent && info.agent_id !== null) throw new Error('observation belongs to another agent; use --cross-agent within this session')
+  return info
 }
 
 function pretty(value: unknown): string {
@@ -306,6 +330,7 @@ async function pluginStatus($: EngineInterface, options: PluginOptions): Promise
     host_version: host.version,
     session_id: await $.session.id(),
     since: await read($, since),
+    capture_namespace: await read($, captureNamespace),
     sequence: await read($, sequence),
     observations: list.length,
     to_retry: (await read($, backlog)).length,
@@ -315,13 +340,102 @@ async function pluginStatus($: EngineInterface, options: PluginOptions): Promise
   }
 }
 
+/** Explicit comparison and scope options; positional claim text stays literal after --. */
+function commandOptions(verb: string, words: string[]) {
+  const positional: string[] = []
+  const supporting: string[] = []
+  let crossAgent = false
+  let policy = 'exact-v1'
+  let partial = false
+  let minChars = 16
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index]!
+    if (word === '--') {
+      positional.push(...words.slice(index + 1))
+      break
+    }
+    if (word === '--cross-agent') crossAgent = true
+    else if (word === '--partial' && verb === 'match') partial = true
+    else if ((word === '--policy' || word === '--min-chars') && verb === 'match') {
+      const value = words[++index]
+      if (value === undefined || value.startsWith('--')) throw new Error(`${word} needs a value`)
+      if (word === '--policy') {
+        if (!['exact-v1', 'line-endings-v1', 'common-indent-v1'].includes(value)) throw new Error(`unknown comparison policy "${value}"`)
+        policy = value
+      } else {
+        if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) throw new Error('--min-chars must be a positive whole number')
+        minChars = Number(value)
+      }
+    } else if (word === '--support' && verb === 'claim') {
+      const value = words[++index]
+      if (value === undefined || value.startsWith('--')) throw new Error('--support needs an observation ID')
+      supporting.push(value)
+    } else if (word.startsWith('--')) throw new Error(`unknown option "${word}" for ${verb}`)
+    else positional.push(word)
+  }
+  return { positional, supporting, crossAgent, policy, partial, minChars }
+}
+
+async function sessionListing($: EngineInterface, options: PluginOptions, words: string[]): Promise<string> {
+  if (!words.includes('--session')) return 'usage: /textprov list --session [--cross-agent] [--limit N] [--before <id>]'
+  let crossAgent = false
+  let limit = 100
+  let before: string | undefined
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index]!
+    if (word === '--session') continue
+    if (word === '--cross-agent') crossAgent = true
+    else if (word === '--limit') {
+      const value = words[++index] ?? ''
+      if (!/^[1-9]\d*$/.test(value) || Number(value) > 1000) return '--limit must be a whole number from 1 to 1000'
+      limit = Number(value)
+    } else if (word === '--before') {
+      const value = words[++index]
+      if (value === undefined || value.startsWith('--')) return '--before needs an observation ID'
+      before = await resolve($, value)
+    } else return `unknown option "${word}" for session listing`
+  }
+  const scope = { provider: PROVIDER, session_id: await $.session.id(), agent_id: null, cross_agent: crossAgent }
+  const ran = await bridge($, options, { operation: 'list_observations', ...scope, limit, ...(before === undefined ? {} : { before_id: before }) })
+  return ran.ok ? pretty({ scope, ...(ran.result as Record<string, unknown>) }) : ran.error
+}
+
 async function runCommand($: EngineInterface, options: PluginOptions, args: string): Promise<string> {
   await flush($, options)
+  // JSON keeps hashes, claim IDs and voice mappings explicit, and preserves
+  // spaces inside definitions. No candidate, hash or classification is guessed.
+  const raw = args.trim().match(/^(transfer|resolve|export)(?:\s+([\s\S]*))?$/)
+  if (raw !== null) {
+    const operation = raw[1]!
+    if (raw[2] === undefined) return `usage: /textprov ${operation} <JSON object of core arguments>`
+    let payload: unknown
+    try {
+      payload = JSON.parse(raw[2])
+    } catch {
+      return `${operation} needs a valid JSON object`
+    }
+    if (payload === null || typeof payload !== 'object' || Array.isArray(payload)) return `${operation} needs a JSON object`
+    const request = { ...(payload as Record<string, unknown>) }
+    if ('operation' in request) return 'operation is selected by the subcommand; omit it from the JSON object'
+    if ('cross_agent' in request && typeof request.cross_agent !== 'boolean') return 'cross_agent must be a boolean'
+    const crossAgent = request.cross_agent === true
+    for (const name of ['observation_id', 'source_id', 'target_id']) {
+      if (typeof request[name] === 'string') {
+        request[name] = await resolve($, request[name])
+        await scopedInspection($, options, request[name] as string, crossAgent)
+      }
+    }
+    // resolve/export have no core cross-agent parameter; this flag controls
+    // access to their selected observation in the host session only.
+    if (operation !== 'transfer') delete request.cross_agent
+    const ran = await bridge($, options, { ...request, operation })
+    return ran.ok ? pretty(ran.result) : ran.error
+  }
   const words = args.trim().split(/\s+/).filter(word => word !== '')
   const verb = words[0] ?? 'list'
   switch (verb) {
     case 'list':
-      return listing($, options)
+      return words.length <= 1 ? listing($, options) : sessionListing($, options, words.slice(1))
     case 'help':
       return HELP
     case 'status': {
@@ -332,29 +446,39 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
       return pretty({ ...report, plugin })
     }
     case 'inspect': {
-      if (words[1] === undefined) return 'usage: /textprov inspect <id>'
-      const id = await resolve($, words[1])
-      const ran = await bridge($, options, { operation: 'inspect', observation_id: id })
-      return ran.ok ? pretty(ran.result) : ran.error
+      const flags = commandOptions(verb, words.slice(1))
+      if (flags.positional.length !== 1) return 'usage: /textprov inspect <id> [--cross-agent]'
+      const id = await resolve($, flags.positional[0]!)
+      return pretty(await scopedInspection($, options, id, flags.crossAgent))
     }
     case 'match': {
-      if (words[1] === undefined || words[2] === undefined) return 'usage: /textprov match <source-id> <target-id>'
+      const flags = commandOptions(verb, words.slice(1))
+      if (flags.positional.length !== 2) return 'usage: /textprov match <source-id> <target-id> [--policy <policy>] [--partial] [--min-chars N] [--cross-agent]'
+      const source = await resolve($, flags.positional[0]!)
+      const target = await resolve($, flags.positional[1]!)
+      await Promise.all([source, target].map(id => scopedInspection($, options, id, flags.crossAgent)))
       const ran = await bridge($, options, {
         operation: 'match',
-        source_id: await resolve($, words[1]),
-        target_id: await resolve($, words[2]),
+        source_id: source,
+        target_id: target,
+        cross_agent: flags.crossAgent,
+        policy: flags.policy,
+        partial: flags.partial,
+        min_match_chars: flags.minChars,
       })
       return ran.ok ? pretty(ran.result) : ran.error
     }
     case 'claim': {
-      const [, given, start, end, voice, ...rest] = words
+      const flags = commandOptions(verb, words.slice(1))
+      const [given, start, end, voice, ...rest] = flags.positional
       if (given === undefined || start === undefined || end === undefined || voice === undefined) return CLAIM_USAGE
       if (!/^\d+$/.test(start) || !/^\d+$/.test(end)) return `start and end must be whole numbers\n${CLAIM_USAGE}`
       const id = await resolve($, given)
-      const info = await bridge($, options, { operation: 'inspect', observation_id: id })
-      if (!info.ok) return info.error
-      const hash = (info.result as { content_hash?: unknown }).content_hash
+      const info = await scopedInspection($, options, id, flags.crossAgent)
+      const hash = info.content_hash
       if (typeof hash !== 'string') return 'that observation has no content hash; nothing can be claimed on it'
+      const supporting = await Promise.all(flags.supporting.map(given => resolve($, given)))
+      await Promise.all(supporting.map(id => scopedInspection($, options, id, flags.crossAgent)))
       const ran = await bridge($, options, {
         operation: 'claim',
         observation_id: id,
@@ -366,7 +490,8 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
         voice_definition: rest.length > 0 ? rest.join(' ') : `"${voice}" as supplied by the person through /textprov claim`,
         basis: 'user_command',
         policy_version: (await read($, adapter)) ?? ADAPTER,
-        supporting_ids: [],
+        supporting_ids: supporting,
+        cross_agent: flags.crossAgent,
       })
       return ran.ok ? `claim ${String(ran.result)} recorded on ${short(id)} [${start}, ${end}) for ${voice}` : ran.error
     }
@@ -385,23 +510,32 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
       name: COMMAND,
-      description: 'TextProv attribution chronicle: list, status, inspect, match, claim',
-      argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN> [definition]]',
+      description: 'TextProv attribution chronicle: inspect, compare, claim, transfer, resolve and export',
+      argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
     })
     const id = await $.session.id()
+    // Hydrate durable failures before initialization can append another one.
+    // Otherwise a namespace failure could overwrite the previous process's history.
+    const stored = await $.store.get(storeKey(id))
+    if (Array.isArray(stored)) await update($, failures, list => (list.length === 0 ? (stored as TextprovFailure[]) : list))
+    await pruneStore($, id)
     // The adapter string is pinned at the session's first load. A hot reload
     // of a newer module keeps recording under it, so the chronicle's duplicate
     // check (scope, adapter, delivery key) holds for the whole session.
     await update($, adapter, current => current ?? ADAPTER)
+    // The session summary is an observational snapshot, not an allocator.
+    // Separate resumed processes need separate identities even if both seed
+    // their counters from the same snapshot. Hot reload preserves this atom.
+    try {
+      await update($, captureNamespace, current => current ?? crypto.randomUUID())
+    } catch (error) {
+      await fail($, 'capture_namespace', `cannot establish capture identity: ${String(error)}`)
+    }
     await update($, since, current => current ?? new Date().toISOString())
-    // Failures live in the store per session: a resumed process still lists
-    // what an earlier one could not write.
-    const stored = await $.store.get(storeKey(id))
-    if (Array.isArray(stored)) await update($, failures, list => (list.length === 0 ? (stored as TextprovFailure[]) : list))
-    await pruneStore($, id)
     // A resumed session keeps its id but not this module's counter; the chronicle
     // already holds this session's last capture_sequence, so the counter continues
-    // from it and no `prompt:N` key is minted twice in the session's scope.
+    // from it for continuity. Capture identity comes from the process namespace,
+    // not this non-atomic counter; concurrent processes may share a sequence.
     const seeded = await bridge($, options, { operation: 'session', provider: PROVIDER, session_id: id })
     const last = seeded.ok ? (seeded.result as { last_sequence?: unknown }).last_sequence : undefined
     if (typeof last === 'number') {
@@ -437,8 +571,13 @@ export const register: Register = (on, options) => {
   on('prompt.submit', async ($, e, next) => {
     if (e.command !== undefined || e.isMeta === true) return next(e)
     await flush($, options)
+    const namespace = await read($, captureNamespace)
+    if (namespace === null) {
+      await fail($, 'prompt', 'capture identity unavailable; submission was not captured')
+      return next(e)
+    }
     const seq = await nextSequence($)
-    const key = `prompt:${seq}`
+    const key = `prompt:${namespace}:${seq}`
     await update($, pending, () => ({ key, text: e.text }))
     const ran = await next(e)
     if (ran.drop !== undefined) {
@@ -493,7 +632,7 @@ export const register: Register = (on, options) => {
   )
 
   on('tool.call', { tool: 'Edit' }, ($, e, next) =>
-    captureTool($, options, e, e.new_string, e.file_path, () => next(e), e.old_string),
+    captureTool($, options, e, e.new_string, e.file_path, () => next(e), e.old_string, { replace_all: e.replace_all ?? false }),
   )
 
   // The task a subagent is given is assistant text written in the parent's
@@ -514,7 +653,7 @@ export const register: Register = (on, options) => {
         agent: ran.agentId,
         ...(e.tool_use_id === '' ? {} : { tool_call: e.tool_use_id }),
         ...(turn === undefined ? {} : { turn: turn.turnId }),
-        ...loopIds(e.parentAgentId),
+        ...(e.parentAgentId === undefined ? {} : { parent_agent: e.parentAgentId }),
       },
       agentId: e.parentAgentId,
       tool: 'Agent',

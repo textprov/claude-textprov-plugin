@@ -38,6 +38,8 @@ export type TextprovCapture = {
   text: string | null
   completeness?: 'complete' | 'partial' | 'truncated' | 'unobserved'
   hostIds?: Record<string, string>
+  /** Bounded adapter facts, separate from the text and host-ID joins. */
+  attributes?: Record<string, boolean>
   agentId?: string
   tool?: string
   path?: string
@@ -77,6 +79,8 @@ declare module 'claude-code' {
       backlog: TextprovCapture[]
       /** When this process first loaded the module, ISO 8601; what "this process" counts from. */
       since: string | null
+      /** Unique per process, retained on hot reload; prompt identity never comes from a sequence snapshot. */
+      captureNamespace: string | null
     }
   }
 }
