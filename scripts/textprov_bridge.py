@@ -142,6 +142,23 @@ def main(argv=None):
         if not isinstance(request, dict):
             raise ValueError("request must be an object")
         operation = request.pop("operation", None)
+        if operation == "prepare_edit":
+            load_core(args.textprov_python)
+            from textprov.editing import rewrite_edit
+            prepared = rewrite_edit(request["raw"], request["old_string"], request["new_string"],
+                                    replace_all=request.get("replace_all", False), shingles=set(),
+                                    preserve_new_marks=True)
+            if prepared is None:
+                raise ValueError("document edit anchor not found")
+            print(json.dumps({"result": {"old_string": prepared[0], "new_string": prepared[1]}}, ensure_ascii=False))
+            return 0
+        if operation in ("mark_chat", "mark_document", "mark_document_edit"):
+            textprov, _ = load_core(args.textprov_python)
+            function = getattr(textprov, operation, None)
+            if not callable(function):
+                raise ValueError("matching local core with automatic marking APIs is required")
+            print(json.dumps({"result": function(**request)}, ensure_ascii=False))
+            return 0
         database = database_path(data_directory(args.data_dir), args.root)
         if operation == "status":
             result = status(args, database)

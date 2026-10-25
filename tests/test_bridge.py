@@ -53,6 +53,38 @@ class BridgeTest(unittest.TestCase):
                     text=text, host_ids={}, agent_id=None, host_version="t", capture_sequence=1,
                     completeness="complete")
 
+    def test_chat_copy_and_paste_preserves_existing_marks(self):
+        ai = self.ok(dict(operation="mark_chat", text="AI answer 🧪", role="assistant"))
+        self.assertNotEqual(ai, "AI answer 🧪")
+        # JSON transport and an ordinary UTF-8 editor preserve the exact scalars.
+        clip = Path(self.temp.name) / "clipboard.txt"
+        clip.write_text(json.loads(json.dumps(ai)), encoding="utf-8")
+        pasted = clip.read_text(encoding="utf-8")
+        self.assertEqual(pasted, ai)
+        self.assertEqual(self.ok(dict(operation="mark_chat", text=pasted, role="user")), ai)
+        human = self.ok(dict(operation="mark_chat", text="Human words", role="user"))
+        self.assertEqual(self.ok(dict(operation="mark_chat", text=human, role="assistant")), human)
+
+    def test_whole_write_and_marker_insensitive_edit_preserve_existing_text(self):
+        human = self.ok(dict(operation="mark_chat", text="Original words", role="user"))
+        old = human + "\n\nUntouched editor prose.\n"
+        new = "Original words\n\nUntouched editor prose.\n\nNew AI sentence.\n"
+        marked = self.ok(dict(operation="mark_document_edit", old_text=old, new_text=new))
+        self.assertTrue(marked.startswith(old))
+        self.assertNotEqual(marked, old + "\nNew AI sentence.\n")
+        edit = self.ok(dict(operation="prepare_edit", raw=marked, old_string="Original words", new_string="Original words expanded"))
+        self.assertEqual(edit["old_string"], human)
+        self.assertTrue(edit["new_string"].startswith(human))
+        changed = marked.replace(edit["old_string"], edit["new_string"])
+        self.assertIn("Untouched editor prose.\n", changed)
+        self.assertIn(marked[len(old):], changed)
+
+    def test_edit_pasting_marks_onto_existing_unmarked_text_preserves_them(self):
+        marked = self.ok(dict(operation="mark_chat", text="Original words", role="user"))
+        result = self.ok(dict(operation="prepare_edit", raw="Original words", old_string="Original words", new_string=marked))
+        self.assertEqual(result["old_string"], "Original words")
+        self.assertEqual(result["new_string"], marked)
+
     def test_status_before_and_after_a_database_exists(self):
         before = self.ok({"operation": "status"})
         self.assertTrue(before["core"]["available"], before["core"])
