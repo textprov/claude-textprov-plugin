@@ -10,13 +10,12 @@ import type {
 } from '../types'
 import { bridge } from './bridge'
 
-// Claude adapter for the shared TextProv chronicle. It records observations and
-// correlates them by host IDs. It never assigns authorship: a submission is a
-// submission, a tool input is a tool input, and a claim exists only when the
-// person makes one with `/textprov claim`.
+// Claude adapter: chat ingress/output and prose tool mutations use the shared
+// automatic marking policy. Chronicle observations retain transport identities;
+// explicit voice claims remain an advanced, separate operation.
 
 const PROVIDER = 'claude'
-const VERSION = '0.1.3' // keep in step with .claude-plugin/plugin.json
+const VERSION = '0.1.4' // keep in step with .claude-plugin/plugin.json
 const ADAPTER = `claude-textprov-plugin/${VERSION}`
 const COMMAND = 'textprov'
 const KEEP = 500
@@ -40,6 +39,8 @@ const adapter = atom({ plugin: 'textprov', key: 'adapter' } as const, null as st
 const backlog = atom({ plugin: 'textprov', key: 'backlog' } as const, [] as TextprovCapture[])
 const since = atom({ plugin: 'textprov', key: 'since' } as const, null as string | null)
 const captureNamespace = atom({ plugin: 'textprov', key: 'captureNamespace' } as const, null as string | null)
+/** The command name the host accepted, or null while none is registered. */
+const command = atom({ plugin: 'textprov', key: 'command' } as const, null as string | null)
 
 async function nextSequence($: EngineInterface): Promise<number> {
   let value = 0
@@ -227,35 +228,72 @@ async function captureTool(
   return ran
 }
 
-const CLAIM_USAGE = [
-  'usage: /textprov claim <id> <start> <end> <voice-id> [definition...] [--support <id>] [--cross-agent]',
-  '  records that scalars [start, end) of the observation belong to a voice.',
-  '  start and end count Unicode scalars from 0, end excluded, on grapheme boundaries;',
-  '  inspect shows scalar_length. voice-id is a TextProv voice such as Voice1;',
-  '  Voice0 is unattributed text and needs no claim. The definition says who the voice is.',
-  '  example: /textprov claim 5410ad26 0 152 Voice1 the person typing at the prompt',
-  '  --support may be repeated; --cross-agent permits support within this provider/session.',
-  '  use -- before a definition containing words that begin with --.',
-].join('\n')
+/** Mark through the shared core without retaining another copy of message text. */
+async function marking($: EngineInterface, options: PluginOptions, operation: string, args: Record<string, string>): Promise<string | undefined> {
+  const ran = await bridge($, options, { operation, ...args })
+  if (!ran.ok || typeof ran.result !== 'string') {
+    await fail($, 'marking', ran.ok ? 'core returned no marked text' : ran.error)
+    return undefined
+  }
+  return ran.result
+}
 
-const HELP = [
-  '/textprov                      list what this process captured',
-  '/textprov list --session [--cross-agent] [--limit N] [--before <id>]',
-  '                               page durable session metadata with full observation IDs',
-  '/textprov status               bridge, core, database and plugin state',
-  '/textprov inspect <id> [--cross-agent]    metadata, ID joins, claims and text expiry',
-  '/textprov match <src> <dst> [--policy exact-v1|line-endings-v1|common-indent-v1]',
-  '                               [--partial] [--min-chars N] [--cross-agent]',
-  '/textprov claim <id> <start> <end> <voice-id> [definition...]',
-  '                               record an explicit attribution claim on a scalar range',
-  '/textprov transfer <JSON>      accept a selected passage and selected supplied claims',
-  '/textprov resolve <JSON>       show resolved claims and unattributed gaps',
-  '/textprov export <JSON>        return experimental classification text and its report',
-  'IDs may be unambiguous prefixes of observation IDs listed by /textprov.',
-  'Matching defaults to exact-v1, full source, minimum 16 scalars for partial candidates.',
-  'Cross-agent operations stay within one provider/session; no match creates a claim.',
-  CLAIM_USAGE,
-].join('\n')
+/** Host paste tags are framing, not the user's message text. */
+async function humanPrompt($: EngineInterface, options: PluginOptions, text: string): Promise<string> {
+  const mark = async (part: string) => part === '' ? '' : (await marking($, options, 'mark_chat', { text: part, role: 'user' })) ?? part
+  const parts: string[] = []
+  let cursor = 0
+  for (const match of text.matchAll(PASTE)) {
+    parts.push(await mark(text.slice(cursor, match.index)))
+    const openingEnd = match[0].indexOf('>') + 1
+    parts.push(match[0].slice(0, openingEnd), await mark(match[2]!), match[0].slice(openingEnd + match[2]!.length))
+    cursor = match.index! + match[0].length
+  }
+  parts.push(await mark(text.slice(cursor)))
+  return parts.join('')
+}
+
+const PROSE = /\.(?:md|markdown|txt|rst|adoc|mdx)$/i
+function humanOrigin(kind: string | undefined): boolean {
+  return kind === 'composer' || kind === 'bridge' || kind === 'sdk'
+}
+
+// Usage text names the registered `/textprov` command.
+
+function claimUsage(slash: string): string {
+  return [
+    `usage: ${slash} claim <id> <start> <end> <voice-id> [definition...] [--support <id>] [--cross-agent]`,
+    '  records that scalars [start, end) of the observation belong to a voice.',
+    '  start and end count Unicode scalars from 0, end excluded, on grapheme boundaries;',
+    '  inspect shows scalar_length. voice-id is a TextProv voice such as Voice1;',
+    '  Voice0 is unattributed text and needs no claim. The definition says who the voice is.',
+    `  example: ${slash} claim 5410ad26 0 152 Voice1 the person typing at the prompt`,
+    '  --support may be repeated; --cross-agent permits support within this provider/session.',
+    '  use -- before a definition containing words that begin with --.',
+  ].join('\n')
+}
+
+function help(slash: string): string {
+  const indent = ' '.repeat(slash.length + 22)
+  return [
+    `${slash}                      list what this process captured`,
+    `${slash} list --session [--cross-agent] [--limit N] [--before <id>]`,
+    `${indent}page durable session metadata with full observation IDs`,
+    `${slash} status               bridge, core, database and plugin state`,
+    `${slash} inspect <id> [--cross-agent]    metadata, ID joins, claims and text expiry`,
+    `${slash} match <src> <dst> [--policy exact-v1|line-endings-v1|common-indent-v1]`,
+    `${indent}[--partial] [--min-chars N] [--cross-agent]`,
+    `${slash} claim <id> <start> <end> <voice-id> [definition...]`,
+    `${indent}record an explicit attribution claim on a scalar range`,
+    `${slash} transfer <JSON>      accept a selected passage and selected supplied claims`,
+    `${slash} resolve <JSON>       show resolved claims and unattributed gaps`,
+    `${slash} export <JSON>        return experimental classification text and its report`,
+    `IDs may be unambiguous prefixes of observation IDs listed by ${slash}.`,
+    'Matching defaults to exact-v1, full source, minimum 16 scalars for partial candidates.',
+    'Cross-agent operations stay within one provider/session; no match creates a claim.',
+    claimUsage(slash),
+  ].join('\n')
+}
 
 function short(id: string): string {
   return id.slice(0, 8)
@@ -329,6 +367,7 @@ async function pluginStatus($: EngineInterface, options: PluginOptions): Promise
     loaded_version: VERSION,
     host_version: host.version,
     session_id: await $.session.id(),
+    command: await read($, command),
     since: await read($, since),
     capture_namespace: await read($, captureNamespace),
     sequence: await read($, sequence),
@@ -376,8 +415,8 @@ function commandOptions(verb: string, words: string[]) {
   return { positional, supporting, crossAgent, policy, partial, minChars }
 }
 
-async function sessionListing($: EngineInterface, options: PluginOptions, words: string[]): Promise<string> {
-  if (!words.includes('--session')) return 'usage: /textprov list --session [--cross-agent] [--limit N] [--before <id>]'
+async function sessionListing($: EngineInterface, options: PluginOptions, words: string[], slash: string): Promise<string> {
+  if (!words.includes('--session')) return `usage: ${slash} list --session [--cross-agent] [--limit N] [--before <id>]`
   let crossAgent = false
   let limit = 100
   let before: string | undefined
@@ -400,14 +439,14 @@ async function sessionListing($: EngineInterface, options: PluginOptions, words:
   return ran.ok ? pretty({ scope, ...(ran.result as Record<string, unknown>) }) : ran.error
 }
 
-async function runCommand($: EngineInterface, options: PluginOptions, args: string): Promise<string> {
+async function runCommand($: EngineInterface, options: PluginOptions, args: string, slash: string): Promise<string> {
   await flush($, options)
   // JSON keeps hashes, claim IDs and voice mappings explicit, and preserves
   // spaces inside definitions. No candidate, hash or classification is guessed.
   const raw = args.trim().match(/^(transfer|resolve|export)(?:\s+([\s\S]*))?$/)
   if (raw !== null) {
     const operation = raw[1]!
-    if (raw[2] === undefined) return `usage: /textprov ${operation} <JSON object of core arguments>`
+    if (raw[2] === undefined) return `usage: ${slash} ${operation} <JSON object of core arguments>`
     let payload: unknown
     try {
       payload = JSON.parse(raw[2])
@@ -435,9 +474,9 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
   const verb = words[0] ?? 'list'
   switch (verb) {
     case 'list':
-      return words.length <= 1 ? listing($, options) : sessionListing($, options, words.slice(1))
+      return words.length <= 1 ? listing($, options) : sessionListing($, options, words.slice(1), slash)
     case 'help':
-      return HELP
+      return help(slash)
     case 'status': {
       const ran = await bridge($, options, { operation: 'status' })
       const plugin = await pluginStatus($, options)
@@ -447,13 +486,13 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
     }
     case 'inspect': {
       const flags = commandOptions(verb, words.slice(1))
-      if (flags.positional.length !== 1) return 'usage: /textprov inspect <id> [--cross-agent]'
+      if (flags.positional.length !== 1) return `usage: ${slash} inspect <id> [--cross-agent]`
       const id = await resolve($, flags.positional[0]!)
       return pretty(await scopedInspection($, options, id, flags.crossAgent))
     }
     case 'match': {
       const flags = commandOptions(verb, words.slice(1))
-      if (flags.positional.length !== 2) return 'usage: /textprov match <source-id> <target-id> [--policy <policy>] [--partial] [--min-chars N] [--cross-agent]'
+      if (flags.positional.length !== 2) return `usage: ${slash} match <source-id> <target-id> [--policy <policy>] [--partial] [--min-chars N] [--cross-agent]`
       const source = await resolve($, flags.positional[0]!)
       const target = await resolve($, flags.positional[1]!)
       await Promise.all([source, target].map(id => scopedInspection($, options, id, flags.crossAgent)))
@@ -471,8 +510,8 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
     case 'claim': {
       const flags = commandOptions(verb, words.slice(1))
       const [given, start, end, voice, ...rest] = flags.positional
-      if (given === undefined || start === undefined || end === undefined || voice === undefined) return CLAIM_USAGE
-      if (!/^\d+$/.test(start) || !/^\d+$/.test(end)) return `start and end must be whole numbers\n${CLAIM_USAGE}`
+      if (given === undefined || start === undefined || end === undefined || voice === undefined) return claimUsage(slash)
+      if (!/^\d+$/.test(start) || !/^\d+$/.test(end)) return `start and end must be whole numbers\n${claimUsage(slash)}`
       const id = await resolve($, given)
       const info = await scopedInspection($, options, id, flags.crossAgent)
       const hash = info.content_hash
@@ -487,7 +526,7 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
         content_hash: hash,
         voice_context: `claude:${await $.session.id()}`,
         voice_id: voice,
-        voice_definition: rest.length > 0 ? rest.join(' ') : `"${voice}" as supplied by the person through /textprov claim`,
+        voice_definition: rest.length > 0 ? rest.join(' ') : `"${voice}" as supplied by the person through ${slash} claim`,
         basis: 'user_command',
         policy_version: (await read($, adapter)) ?? ADAPTER,
         supporting_ids: supporting,
@@ -496,7 +535,7 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
       return ran.ok ? `claim ${String(ran.result)} recorded on ${short(id)} [${start}, ${end}) for ${voice}` : ran.error
     }
     default:
-      return `unknown subcommand "${verb}"\n${HELP}`
+      return `unknown subcommand "${verb}"\n${help(slash)}`
   }
 }
 
@@ -506,19 +545,38 @@ async function pruneStore($: EngineInterface, mine: string): Promise<void> {
   for (const key of others.slice(0, Math.max(0, others.length - (STORED_SESSIONS - 1)))) await $.store.delete(key)
 }
 
-export const register: Register = (on, options) => {
-  on('session.start', async ($, e, next) => {
+/** Registers `/textprov`; a refusal is reported without stopping capture. */
+async function serveCommand($: EngineInterface): Promise<void> {
+  try {
     await $.command.register({
       name: COMMAND,
       description: 'TextProv attribution chronicle: inspect, compare, claim, transfer, resolve and export',
       argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
     })
+    await update($, command, () => COMMAND)
+  } catch (error) {
+    await update($, command, () => null)
+    await fail($, 'command', `no command registered: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+async function answer($: EngineInterface, options: PluginOptions, args: string, name: string): Promise<{ text: string }> {
+  try {
+    return { text: await runCommand($, options, args, `/${name}`) }
+  } catch (error) {
+    return { text: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+export const register: Register = (on, options) => {
+  on('session.start', async ($, e, next) => {
     const id = await $.session.id()
     // Hydrate durable failures before initialization can append another one.
     // Otherwise a namespace failure could overwrite the previous process's history.
     const stored = await $.store.get(storeKey(id))
     if (Array.isArray(stored)) await update($, failures, list => (list.length === 0 ? (stored as TextprovFailure[]) : list))
     await pruneStore($, id)
+    await serveCommand($)
     // The adapter string is pinned at the session's first load. A hot reload
     // of a newer module keeps recording under it, so the chronicle's duplicate
     // check (scope, adapter, delivery key) holds for the whole session.
@@ -543,20 +601,19 @@ export const register: Register = (on, options) => {
     } else {
       await fail($, 'session', seeded.ok ? 'bridge answered no last_sequence' : seeded.error)
     }
+    await showStatus($)
     return next(e)
   })
 
-  on('command.run', { command: COMMAND }, async ($, e) => {
-    try {
-      return { text: await runCommand($, options, e.args) }
-    } catch (error) {
-      return { text: error instanceof Error ? error.message : String(error) }
-    }
-  })
+  // Only answer after registration succeeds; a refused name keeps its existing owner.
+  on('command.run', { command: COMMAND }, async ($, e, next) =>
+    (await read($, command)) === COMMAND ? answer($, options, e.args, COMMAND) : next(e),
+  )
 
   // A submission is observed after every rewrite above and beneath. Commands
   // and prompts the host marks isMeta are excluded; other prompt.submit
-  // deliveries are transport observations, not evidence of a person's authorship.
+  // deliveries remain transport observations. Only human ingress receives the
+  // explicit speaker policy; background deliveries retain their original text.
   // The key carries the same number the record keeps as capture_sequence.
   //
   // The engine may start the turn inside `next(e)` (a headless run does), so
@@ -572,15 +629,16 @@ export const register: Register = (on, options) => {
   on('prompt.submit', async ($, e, next) => {
     if (e.command !== undefined || e.isMeta === true) return next(e)
     await flush($, options)
+    const text = humanOrigin(e.origin?.kind) ? await humanPrompt($, options, e.text) : e.text
     const namespace = await read($, captureNamespace)
     if (namespace === null) {
       await fail($, 'prompt', 'capture identity unavailable; submission was not captured')
-      return next(e)
+      return next({ ...e, text })
     }
     const seq = await nextSequence($)
     const key = `prompt:${namespace}:${seq}`
-    await update($, pending, () => ({ key, text: e.text }))
-    const ran = await next(e)
+    await update($, pending, () => ({ key, text }))
+    const ran = await next({ ...e, text })
     if (ran.drop !== undefined) {
       await update($, pending, waiting => (waiting?.key === key ? null : waiting))
       return ran
@@ -634,13 +692,62 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  on('tool.call', { tool: 'Write' }, ($, e, next) =>
-    captureTool($, options, e, e.content, e.file_path, () => next(e)),
-  )
+  // Rewrite actual prose tool arguments, before permission and execution.
+  // No code/config extension is opted into automatic document marking.
+  on('tool.call', { tool: 'Write' }, async ($, e, next) => {
+    if (!PROSE.test(e.file_path)) return captureTool($, options, e, e.content, e.file_path, () => next(e))
+    let old = ''
+    try {
+      if (await $.fs.exists(e.file_path)) old = await $.fs.read(e.file_path)
+    } catch (error) {
+      await fail($, 'marking', `cannot read existing document: ${String(error)}`)
+      return { deny: 'TextProv could not read the document to preserve its existing marks.' }
+    }
+    const content = await marking($, options, 'mark_document_edit', { old_text: old, new_text: e.content })
+    if (content === undefined) return { deny: 'TextProv could not mark the document; inspect /textprov status.' }
+    return captureTool($, options, e, content, e.file_path, () => next({ ...e, content }))
+  })
 
-  on('tool.call', { tool: 'Edit' }, ($, e, next) =>
-    captureTool($, options, e, e.new_string, e.file_path, () => next(e), e.old_string, { replace_all: e.replace_all ?? false }),
-  )
+  on('tool.call', { tool: 'Edit' }, async ($, e, next) => {
+    let old_string = e.old_string
+    let new_string = e.new_string
+    if (PROSE.test(e.file_path)) {
+      let raw: string
+      try { raw = await $.fs.read(e.file_path) }
+      catch (error) {
+        await fail($, 'marking', `cannot read document edit context: ${String(error)}`)
+        return { deny: 'TextProv could not read the document to preserve its existing marks.' }
+      }
+      const prepared = await bridge($, options, { operation: 'prepare_edit', raw,
+        old_string, new_string, replace_all: e.replace_all ?? false })
+      const result = prepared.ok ? prepared.result as { old_string?: unknown; new_string?: unknown } : undefined
+      if (typeof result?.old_string !== 'string' || typeof result.new_string !== 'string') {
+        await fail($, 'marking', prepared.ok ? 'core returned no prepared edit' : prepared.error)
+        return { deny: 'TextProv could not safely mark the edit; inspect /textprov status.' }
+      }
+      old_string = result.old_string
+      new_string = result.new_string
+    }
+    return captureTool($, options, e, new_string, e.file_path, () => next({ ...e, old_string, new_string }), old_string, { replace_all: e.replace_all ?? false })
+  })
+
+  // Store assistant text with marks as well as drawing it with marks. Tool,
+  // image and thinking blocks pass through unchanged.
+  on('session.append', { door: 'response' }, async ($, e, next) => {
+    if (e.message.type !== 'assistant') return next(e)
+    const content = []
+    for (const block of e.message.content) {
+      if (block.type !== 'text' || typeof block.text !== 'string') { content.push(block); continue }
+      const text = await marking($, options, 'mark_chat', { text: block.text, role: 'assistant' })
+      content.push(text === undefined ? block : { ...block, text })
+    }
+    return next({ ...e, message: { ...e.message, content } })
+  })
+
+  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
+    const text = await marking($, options, 'mark_chat', { text: e.props.text, role: 'assistant' })
+    return next(text === undefined ? e : { ...e, props: { ...e.props, text } })
+  })
 
   // The task a subagent is given is assistant text written in the parent's
   // loop. It is recorded there with the Agent call's id and the started agent's
@@ -683,7 +790,7 @@ export const register: Register = (on, options) => {
         kind: 'assistant_message',
         channel: 'assistant',
         visibility: 'display',
-        text: e.answer,
+        text: (await marking($, options, 'mark_chat', { text: e.answer, role: 'assistant' })) ?? e.answer,
         completeness: e.isAborted ? 'partial' : 'complete',
         hostIds: {
           turn: e.turnId,

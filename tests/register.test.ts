@@ -16,6 +16,10 @@ type Fixture = {
   requests: Request[]
   /** What the plugin put in `$.store`, by key. */
   store: Record<string, unknown>
+  /** Command names the host refuses to register, with the refusal. */
+  tools?: Request[]
+  marker?: (request: Request) => unknown
+  refused?: Record<string, string>
 }
 
 /** Stands in for the engine and for the Python bridge: every request is kept, every observe answered with a fresh id. */
@@ -27,10 +31,15 @@ function engine(
 ) {
   let minted = 0
   on('session.start', (_, e) => ({ cwd: e.cwd }))
-  on('command.register', () => ({ value: { command: 'textprov' } }))
+  on('command.register', (_, e) => {
+    const reason = fixture.refused?.[e.name]
+    return reason === undefined ? { value: { command: e.name } } : { deny: reason }
+  })
   on('session.id', () => ({ value: 'session-test' }))
   on('session.root', () => ({ value: '/project' }))
   on('session.version', () => ({ value: { version: '0.0.0-test' } }))
+  on('fs.exists', () => ({ value: false }))
+  on('fs.read', () => ({ value: 'old' }))
   on('ui.status', () => ({ value: undefined }))
   on('clock.after', () => ({ value: undefined }))
   on('store.get', (_, e) => ({ value: fixture.store[e.key] }))
@@ -45,13 +54,19 @@ function engine(
   on('store.keys', () => ({ value: Object.keys(fixture.store) }))
   on('prompt.submit', (_, e) => ({ text: e.text }))
   on('turn.start', (_, e) => ({ turnId: e.turnId }))
-  on('tool.call', () => ({ result: {} }))
+  on('tool.call', (_, e) => { fixture.tools?.push(e); return { result: {} } })
   on('turn.complete', (_, e) => ({ text: e.answer }))
   on('agent.spawn', () => ({ model: 'test-model', agentId: spawnedAgent ?? 'agent-1' }))
   on('process.run', (_, e) => {
     const request = JSON.parse(e.init?.stdin ?? '{}') as Request
     fixture.requests.push(request)
-    const given = bridge?.(request)
+    // Default identity marking keeps transport tests focused on correlation.
+    // Dedicated marking tests below assert rewritten arguments separately.
+    const policyResult = request.operation === 'mark_chat' ? request.text
+      : request.operation === 'mark_document_edit' ? request.new_text
+      : request.operation === 'prepare_edit' ? { old_string: request.old_string, new_string: request.new_string }
+      : undefined
+    const given = policyResult !== undefined ? (fixture.marker?.(request) ?? policyResult) : bridge?.(request)
     if (given instanceof Refusal) {
       return {
         value: { exitCode: 1, stdout: '', stderr: JSON.stringify({ error: given.message }), isStdoutTruncated: false, isStderrTruncated: false },
@@ -85,7 +100,7 @@ test('a submission is observed as stored user text, with no claim', async ($, on
   expect(one.text).toBe('Keep the original wording.')
   expect(one.session_id).toBe('session-test')
   expect(one.provider).toBe('claude')
-  expect(one.adapter).toBe('claude-textprov-plugin/0.1.3')
+  expect(one.adapter).toBe('claude-textprov-plugin/0.1.4')
   expect(one.completeness).toBe('complete')
   expect(one.attributes).toEqual({ prompt_origin: 'composer' })
 })
@@ -119,7 +134,7 @@ test('notification-shaped composer text and an unmarked notification retain thei
   expect(captures[0]!.delivery_key).not.toBe(captures[1]!.delivery_key)
   expect(captures[0]!.attributes).toEqual({ prompt_origin: 'composer' })
   expect(captures[1]!.attributes).toEqual({ prompt_origin: 'task-notification' })
-  expect(f.requests.filter(one => one.operation !== 'observe' && one.operation !== 'session').length).toBe(0)
+  expect(f.requests.filter(one => one.operation !== 'observe' && one.operation !== 'session' && one.operation !== 'mark_chat').length).toBe(0)
 })
 
 test('a submission without a native origin records explicit null rather than guessing from its wrapper', async ($, on) => {
@@ -138,7 +153,7 @@ test('a submission without a native origin records explicit null rather than gue
   expect(captures[0]!.attributes).toEqual({ prompt_origin: null })
   expect(captures[1]!.text).toBe('quoted text')
   expect(captures[1]!.attributes).toEqual({ prompt_origin: null })
-  expect(f.requests.filter(one => one.operation !== 'observe' && one.operation !== 'session').length).toBe(0)
+  expect(f.requests.filter(one => one.operation !== 'observe' && one.operation !== 'session' && one.operation !== 'mark_chat').length).toBe(0)
 })
 
 test('a host-marked meta prompt is forwarded without being captured', async ($, on) => {
@@ -356,8 +371,8 @@ test('the list command shows what was captured and the status command adds the p
 
   const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
   expect(status.text).toContain('"available": true')
-  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.3"')
-  expect(status.text).toContain('"loaded_version": "0.1.3"')
+  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.4"')
+  expect(status.text).toContain('"loaded_version": "0.1.4"')
   expect(status.text).toContain('"session_id": "session-test"')
   expect(status.text).toContain('"host_version": "0.0.0-test"')
   expect(status.text).toContain('"observations": 1')
@@ -432,7 +447,7 @@ test('inspection and explicit claim support forward cross-agent consent', async 
   expect(claim.content_hash).toBe('current-hash')
   expect(claim.voice_definition).toBe('definition with --literal')
   expect(claim.basis).toBe('user_command')
-  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.3')
+  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.4')
 })
 
 test('invalid comparison and claim flags are refused before comparison or claims', async ($, on) => {
@@ -607,4 +622,105 @@ test('a namespace initialization failure preserves earlier persisted failures', 
   expect(stored[1]!.error).toContain('cannot establish capture identity')
   const listed = await $.command.run({ command: 'textprov', args: '', origin: ORIGIN, presentation: PRESENTATION })
   expect(listed.text).toContain('2 capture failures this session')
+})
+
+test('the plugin registers /textprov and reports its canonical name in help and status', async ($, on) => {
+  const f = fixture()
+  engine(on, f)
+  await $.session.start(SESSION)
+
+  const help = await $.command.run({ command: 'textprov', args: 'help', origin: ORIGIN, presentation: PRESENTATION })
+  expect(help.text).toContain('usage: /textprov claim')
+  expect(help.text).toContain('IDs may be unambiguous prefixes of observation IDs listed by /textprov.')
+  const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
+  expect(status.text).toContain('"command": "textprov"')
+  expect(status.text).toContain('"failures": 0')
+})
+
+test('when /textprov is refused, capture continues without taking over the existing command', async ($, on) => {
+  const f = { ...fixture(), refused: { textprov: 'no commands here' } }
+  engine(on, f)
+  await $.session.start(SESSION)
+  await $.prompt.submit({ text: 'still captured', wait: false, origin: ORIGIN })
+  expect(observed(f.requests).length).toBe(1)
+  const stored = f.store['failures:session-test'] as { key: string; error: string }[]
+  expect(stored.map(one => one.key)).toEqual(['command'])
+  expect(stored[0]!.error).toContain('no commands here')
+  const user = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION }).catch(() => ({ text: undefined }))
+  expect(user.text ?? '').not.toContain('"adapter"')
+})
+
+
+test('human ingress is rewritten, preserves pasted marks, and machine notifications are not made human', async ($, on) => {
+  const f = fixture()
+  const human = 'h\u{E0103}'
+  f.marker = request => request.operation === 'mark_chat' ? `${request.text}${human}` : undefined
+  engine(on, f)
+  await $.session.start(SESSION)
+  const entered = await $.prompt.submit({ text: 'hello', wait: false, origin: ORIGIN })
+  expect(entered.text).toBe(`hello${human}`)
+  expect(observed(f.requests)[0]!.text).toBe(entered.text)
+  const machine = await $.prompt.submit({ text: 'notification', wait: false, origin: { kind: 'task-notification' } })
+  expect(machine.text).toBe('notification')
+})
+
+test('prose Write reaches the tool with marked content while code passes unchanged', async ($, on) => {
+  const f = fixture()
+  f.marker = request => request.operation === 'mark_document_edit' ? 'marked prose' : undefined
+  engine(on, f)
+  const calls: Request[] = []
+  f.tools = calls
+  await $.session.start(SESSION)
+  await $.tool.call({ tool: 'Write', file_path: '/project/notes.md', content: 'prose' })
+  await $.tool.call({ tool: 'Write', file_path: '/project/app.py', content: 'print(1)' })
+  expect(calls[0]!.content).toBe('marked prose')
+  expect(calls[1]!.content).toBe('print(1)')
+})
+
+test('prose Edit uses marker-aware exact anchor and replacement returned by the core', async ($, on) => {
+  const f = fixture()
+  f.marker = request => request.operation === 'prepare_edit' ? { old_string: 'marked old', new_string: 'marked new' } : undefined
+  engine(on, f)
+  const calls: Request[] = []
+  f.tools = calls
+  await $.session.start(SESSION)
+  await $.tool.call({ tool: 'Edit', file_path: '/project/notes.md', old_string: 'old', new_string: 'new' })
+  expect(calls[0]!.old_string).toBe('marked old')
+  expect(calls[0]!.new_string).toBe('marked new')
+})
+
+
+test('assistant stored response text is marked and non-text blocks survive', async ($, on) => {
+  const f = fixture()
+  f.marker = request => request.operation === 'mark_chat' ? `${request.text} [AI marked]` : undefined
+  engine(on, f)
+  await $.session.start(SESSION)
+  const stored = await $.session.append({ door: 'response', origin: { kind: 'model', model: 'test' }, uuid: 'answer-1',
+    message: { type: 'assistant', role: 'assistant', content: [
+      { type: 'text', text: 'answer' }, { type: 'thinking', thinking: 'private' },
+    ] } })
+  expect(stored.message!.content[0]!.text).toBe('answer [AI marked]')
+  expect(stored.message!.content[1]!.thinking).toBe('private')
+})
+
+test('assistant rendered copy text uses the shared marking policy', async ($, on) => {
+  const f = fixture()
+  f.marker = request => request.operation === 'mark_chat' ? `${request.text} [AI marked]` : undefined
+  engine(on, f)
+  on('ui.render', { component: 'AssistantMessage' }, (_, e) => ({ type: 'Text', children: [e.props.text] }))
+  await $.session.start(SESSION)
+  const rendered = await $.ui.render({ surface: 'terminal', component: 'AssistantMessage', requestId: 'answer-1',
+    props: { text: 'answer', isFirstOfReply: true } })
+  expect(rendered).toMatchObject({ type: 'Text', children: ['answer [AI marked]'] })
+})
+
+
+test('paste framing stays parseable while its user text is marked', async ($, on) => {
+  const f = fixture()
+  f.marker = request => request.operation === 'mark_chat' ? `${request.text} [human]` : undefined
+  engine(on, f)
+  await $.session.start(SESSION)
+  const entered = await $.prompt.submit({ text: 'Look <pasted_content id="p1">pasted</pasted_content id="p1">', wait: false, origin: ORIGIN })
+  expect(entered.text).toBe('Look  [human]<pasted_content id="p1">pasted [human]</pasted_content id="p1">')
+  expect(observed(f.requests).find(one => one.event_kind === 'pasted_block')!.text).toBe('pasted [human]')
 })

@@ -81,6 +81,8 @@ declare module 'claude-code' {
       since: string | null
       /** Unique per process, retained on hot reload; prompt identity never comes from a sequence snapshot. */
       captureNamespace: string | null
+      /** The slash command name the host accepted (`textprov`); null while none is registered. */
+      command: string | null
     }
   }
 }

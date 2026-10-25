@@ -1,8 +1,8 @@
 {
   "name": "textprov",
   "displayName": "TextProv attribution chronicle",
-  "version": "0.1.3",
-  "description": "Records prompt, Write/Edit and final-answer observations in the shared TextProv attribution chronicle and exposes /textprov for inspection, matching and explicit claims.",
+  "version": "0.1.4",
+  "description": "Automatically marks human chat and AI output, preserves provenance during prose edits, and records observations in the shared TextProv chronicle.",
   "author": { "name": "TextProv contributors", "url": "https://textprov.org" },
   "homepage": "https://github.com/textprov/textprov",
   "repository": "https://github.com/textprov/claude-textprov-plugin",
