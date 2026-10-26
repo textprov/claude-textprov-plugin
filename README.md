@@ -9,9 +9,10 @@ A prototype Claude Code plugin that records attribution observations in the shar
 `/textprov` to inspect them, match passages between them, and record explicit
 attribution claims.
 
-It is a hooks module (a "󠄁m󠄁o󠄁d󠄁"󠄁)󠄁.󠄁 H󠄁u󠄁m󠄁a󠄁n󠄁 c󠄁h󠄁a󠄁t󠄁 i󠄁n󠄁g󠄁r󠄁e󠄁s󠄁s󠄁 i󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁;󠄁 a󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁
-t󠄁e󠄁x󠄁t󠄁 i󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 A󠄁I󠄁,󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁i󠄁n󠄁g󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 A󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁 t󠄁r󠄁a󠄁n󠄁s󠄁c󠄁r󠄁i󠄁p󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁 a󠄁n󠄁d󠄁 d󠄁r󠄁a󠄁w󠄁i󠄁n󠄁g󠄁
-a󠄁r󠄁e󠄁 b󠄁o󠄁t󠄁h󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁t󠄁e󠄁n󠄁 t󠄁h󠄁r󠄁o󠄁u󠄁g󠄁h󠄁 t󠄁h󠄁e󠄁 s󠄁h󠄁a󠄁r󠄁e󠄁d󠄁 c󠄁o󠄁r󠄁e󠄁 s󠄁o󠄁 p󠄁l󠄁a󠄁i󠄁n󠄁-󠄁t󠄁e󠄁x󠄁t󠄁 c󠄁o󠄁p󠄁y󠄁 r󠄁e󠄁t󠄁a󠄁i󠄁n󠄁s󠄁 t󠄁h󠄁e󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁
+It is a hooks module (a "󠄁m󠄁o󠄁d󠄁"󠄁)󠄁.󠄁 H󠄁u󠄁m󠄁a󠄁n󠄁 c󠄁h󠄁a󠄁t󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁 i󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁;󠄁 a󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁
+p󠄁r󠄁o󠄁s󠄁e󠄁 i󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 A󠄁I󠄁,󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁i󠄁n󠄁g󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 B󠄁y󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁,󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁 f󠄁e󠄁n󠄁c󠄁e󠄁d󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁
+M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 d󠄁e󠄁s󠄁t󠄁i󠄁n󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 a󠄁n󠄁d󠄁 o󠄁t󠄁h󠄁e󠄁r󠄁 p󠄁r󠄁o󠄁t󠄁e󠄁c󠄁t󠄁e󠄁d󠄁 s󠄁y󠄁n󠄁t󠄁a󠄁x󠄁 r󠄁e󠄁c󠄁e󠄁i󠄁v󠄁e󠄁 n󠄁o󠄁 n󠄁e󠄁w󠄁 c󠄁h󠄁a󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 A󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁
+t󠄁r󠄁a󠄁n󠄁s󠄁c󠄁r󠄁i󠄁p󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁 a󠄁n󠄁d󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁-󠄁m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁 d󠄁r󠄁a󠄁w󠄁i󠄁n󠄁g󠄁s󠄁 u󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁a󠄁m󠄁e󠄁 s󠄁h󠄁a󠄁r󠄁e󠄁d󠄁 c󠄁o󠄁r󠄁e󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁y󠄁.󠄁
 M󠄁a󠄁c󠄁h󠄁i󠄁n󠄁e󠄁 n󠄁o󠄁t󠄁i󠄁f󠄁i󠄁c󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 a󠄁n󠄁d󠄁 t󠄁o󠄁o󠄁l󠄁 r󠄁e󠄁s󠄁u󠄁l󠄁t󠄁s󠄁 a󠄁r󠄁e󠄁 n󠄁o󠄁t󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 a󠄁s󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁.󠄁
 
 F󠄁o󠄁r󠄁 `Write` a󠄁n󠄁d󠄁 `Edit` o󠄁n󠄁 `.md`,󠄁 `.markdown`,󠄁 `.txt`,󠄁 `.rst`,󠄁 `.adoc` a󠄁n󠄁d󠄁 `.mdx`,󠄁
@@ -23,7 +24,7 @@ C󠄁o󠄁d󠄁e󠄁/󠄁c󠄁o󠄁n󠄁f󠄁i󠄁g󠄁 f󠄁i󠄁l󠄁e󠄁s�
 a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 m󠄁u󠄁t󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 p󠄁a󠄁t󠄁h󠄁.󠄁 O󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 e󠄁d󠄁i󠄁t󠄁o󠄁r󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁 s󠄁t󠄁a󠄁y󠄁 u󠄁n󠄁m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 u󠄁n󠄁l󠄁e󠄁s󠄁s󠄁 t󠄁h󠄁e󠄁 e󠄁d󠄁i󠄁t󠄁o󠄁r󠄁
 r󠄁e󠄁t󠄁a󠄁i󠄁n󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 o󠄁n󠄁 t󠄁h󠄁o󠄁s󠄁e󠄁 c󠄁h󠄁a󠄁r󠄁a󠄁c󠄁t󠄁e󠄁r󠄁s󠄁;󠄁 T󠄁e󠄁x󠄁t󠄁P󠄁r󠄁o󠄁v󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 r󠄁u󠄁n󠄁 a󠄁n󠄁 e󠄁d󠄁i󠄁t󠄁o󠄁r󠄁 w󠄁a󠄁t󠄁c󠄁h󠄁e󠄁r󠄁.󠄁
 
-V󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁:󠄁 0󠄁.󠄁1󠄁.󠄁4󠄁 (󠄁l󠄁o󠄁c󠄁a󠄁l󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁)󠄁.󠄁 U󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 m󠄁a󠄁t󠄁c󠄁h󠄁i󠄁n󠄁g󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 c󠄁o󠄁r󠄁e󠄁 w󠄁i󠄁t󠄁h󠄁 t󠄁h󠄁e󠄁
+V󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁:󠄁 0󠄁.󠄁1󠄁.󠄁5󠄁 (󠄁l󠄁o󠄁c󠄁a󠄁l󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁)󠄁.󠄁 U󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 m󠄁a󠄁t󠄁c󠄁h󠄁i󠄁n󠄁g󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 c󠄁o󠄁r󠄁e󠄁 w󠄁i󠄁t󠄁h󠄁 t󠄁h󠄁e󠄁
 `mark_chat`,󠄁 `mark_document_edit` a󠄁n󠄁d󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁r󠄁-󠄁a󠄁w󠄁a󠄁r󠄁e󠄁 e󠄁d󠄁i󠄁t󠄁i󠄁n󠄁g󠄁 A󠄁P󠄁I󠄁s󠄁.󠄁 M󠄁a󠄁n󠄁u󠄁a󠄁l󠄁 c󠄁l󠄁a󠄁i󠄁m󠄁s󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁
 a󠄁n󠄁 a󠄁d󠄁v󠄁a󠄁n󠄁c󠄁e󠄁d󠄁 C󠄁h󠄁r󠄁o󠄁n󠄁i󠄁c󠄁l󠄁e󠄁 f󠄁e󠄁a󠄁t󠄁u󠄁r󠄁e󠄁 a󠄁n󠄁d󠄁 a󠄁r󠄁e󠄁 n󠄁o󠄁t󠄁 r󠄁e󠄁q󠄁u󠄁i󠄁r󠄁e󠄁d󠄁 f󠄁o󠄁r󠄁 a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁c󠄁a󠄁t󠄁i󠄁o󠄁n󠄁.󠄁
 T󠄁h󠄁e󠄁 V󠄁S󠄁/󠄁c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁c󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 e󠄁n󠄁c󠄁o󠄁d󠄁i󠄁n󠄁g󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁s󠄁 e󠄁x󠄁p󠄁e󠄁r󠄁i󠄁m󠄁e󠄁n󠄁t󠄁a󠄁l󠄁.󠄁 C󠄁o󠄁p󠄁y󠄁/󠄁p󠄁a󠄁s󠄁t󠄁e󠄁 r󠄁e󠄁t󠄁a󠄁i󠄁n󠄁s󠄁 a󠄁t󠄁t󠄁r󠄁i󠄁b󠄁u󠄁t󠄁i󠄁o󠄁n󠄁
@@ -31,6 +32,55 @@ w󠄁h󠄁e󠄁n󠄁 t󠄁h󠄁e󠄁 d󠄁e󠄁s󠄁t󠄁i󠄁n󠄁a󠄁t󠄁i�
 c󠄁a󠄁n󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁e󠄁 t󠄁h󠄁e󠄁m󠄁.󠄁 A󠄁 n󠄁a󠄁t󠄁i󠄁v󠄁e󠄁 C󠄁l󠄁a󠄁u󠄁d󠄁e󠄁 C󠄁L󠄁I󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁 v󠄁e󠄁r󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁 a󠄁n󠄁d󠄁 A󠄁I󠄁 r󠄁e󠄁s󠄁p󠄁o󠄁n󠄁s󠄁e󠄁
 m󠄁a󠄁r󠄁k󠄁s󠄁 i󠄁n󠄁 i󠄁t󠄁s󠄁 t󠄁r󠄁a󠄁n󠄁s󠄁c󠄁r󠄁i󠄁p󠄁t󠄁 a󠄁n󠄁d󠄁 J󠄁S󠄁O󠄁N󠄁 r󠄁e󠄁s󠄁u󠄁l󠄁t󠄁;󠄁 m󠄁a󠄁c󠄁O󠄁S󠄁 p󠄁a󠄁s󠄁t󠄁e󠄁b󠄁o󠄁a󠄁r󠄁d󠄁 a󠄁n󠄁d󠄁 U󠄁T󠄁F󠄁-󠄁8󠄁 f󠄁i󠄁l󠄁e󠄁 r󠄁o󠄁u󠄁n󠄁d󠄁 t󠄁r󠄁i󠄁p󠄁s󠄁
 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁d󠄁 t󠄁h󠄁e󠄁 r󠄁e󠄁s󠄁p󠄁o󠄁n󠄁s󠄁e󠄁 s󠄁c󠄁a󠄁l󠄁a󠄁r󠄁s󠄁 e󠄁x󠄁a󠄁c󠄁t󠄁l󠄁y󠄁.󠄁 I󠄁n󠄁t󠄁e󠄁r󠄁a󠄁c󠄁t󠄁i󠄁v󠄁e󠄁 t󠄁e󠄁r󠄁m󠄁i󠄁n󠄁a󠄁l󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁i󠄁o󠄁n󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁s󠄁 u󠄁n󠄁t󠄁e󠄁s󠄁t󠄁e󠄁d󠄁.󠄁
+
+## Control chat marks
+
+T󠄁h󠄁e󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 `prose` s󠄁c󠄁o󠄁p󠄁e󠄁 a󠄁d󠄁d󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 t󠄁o󠄁 s󠄁u󠄁r󠄁r󠄁o󠄁u󠄁n󠄁d󠄁i󠄁n󠄁g󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁 a󠄁n󠄁d󠄁 l󠄁e󠄁a󠄁v󠄁e󠄁s󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁
+f󠄁e󠄁n󠄁c󠄁e󠄁d󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁 M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 l󠄁i󠄁n󠄁k󠄁 d󠄁e󠄁s󠄁t󠄁i󠄁n󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 a󠄁n󠄁d󠄁 o󠄁t󠄁h󠄁e󠄁r󠄁 p󠄁r󠄁o󠄁t󠄁e󠄁c󠄁t󠄁e󠄁d󠄁 s󠄁y󠄁n󠄁t󠄁a󠄁x󠄁 u󠄁n󠄁c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁d󠄁.󠄁 P󠄁u󠄁t󠄁
+c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁s󠄁 i󠄁n󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 c󠄁o󠄁d󠄁e󠄁 o󠄁r󠄁 f󠄁e󠄁n󠄁c󠄁e󠄁d󠄁 c󠄁o󠄁d󠄁e󠄁 b󠄁l󠄁o󠄁c󠄁k󠄁s󠄁:󠄁 o󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁s󠄁 s󠄁t󠄁i󠄁l󠄁l󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁,󠄁 s󠄁o󠄁 t󠄁h󠄁e󠄁
+p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 p󠄁r󠄁o󠄁m󠄁i󠄁s󠄁e󠄁 t󠄁h󠄁a󠄁t󠄁 e󠄁v󠄁e󠄁r󠄁y󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁-󠄁l󠄁i󠄁k󠄁e󠄁 s󠄁e󠄁n󠄁t󠄁e󠄁n󠄁c󠄁e󠄁 w󠄁i󠄁l󠄁l󠄁 c󠄁o󠄁p󠄁y󠄁 c󠄁l󠄁e󠄁a󠄁n󠄁l󠄁y󠄁.󠄁
+`all` a󠄁d󠄁d󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 t󠄁h󠄁r󠄁o󠄁u󠄁g󠄁h󠄁o󠄁u󠄁t󠄁 c󠄁h󠄁a󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁.󠄁 `off` s󠄁t󠄁o󠄁p󠄁s󠄁 a󠄁d󠄁d󠄁i󠄁n󠄁g󠄁 c󠄁h󠄁a󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 B󠄁o󠄁t󠄁h󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁
+m󠄁a󠄁r󠄁k󠄁s󠄁 a󠄁l󠄁r󠄁e󠄁a󠄁d󠄁y󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁n󠄁t󠄁;󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁i󠄁n󠄁g󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 c󠄁l󠄁e󠄁a󠄁n󠄁 p󠄁r󠄁e󠄁v󠄁i󠄁o󠄁u󠄁s󠄁l󠄁y󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁s󠄁.󠄁
+U󠄁n󠄁m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁s󠄁 n󠄁o󠄁t󠄁 a󠄁 d󠄁e󠄁c󠄁l󠄁a󠄁r󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 o󠄁f󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 a󠄁u󠄁t󠄁h󠄁o󠄁r󠄁s󠄁h󠄁i󠄁p󠄁.󠄁
+
+```text
+/textprov prose
+/textprov all
+/textprov off
+/textprov all --next
+/textprov status
+```
+
+A󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁 a󠄁p󠄁p󠄁l󠄁i󠄁e󠄁s󠄁 t󠄁o󠄁 n󠄁e󠄁w󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁s󠄁 a󠄁n󠄁d󠄁 n󠄁e󠄁w󠄁l󠄁y󠄁 s󠄁t󠄁a󠄁r󠄁t󠄁e󠄁d󠄁 t󠄁u󠄁r󠄁n󠄁s󠄁.󠄁 A󠄁 r󠄁u󠄁n󠄁n󠄁i󠄁n󠄁g󠄁
+t󠄁u󠄁r󠄁n󠄁 a󠄁n󠄁d󠄁 i󠄁t󠄁s󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁 k󠄁e󠄁e󠄁p󠄁 t󠄁h󠄁e󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁e󠄁d󠄁 w󠄁h󠄁e󠄁n󠄁 t󠄁h󠄁e󠄁 t󠄁u󠄁r󠄁n󠄁 s󠄁t󠄁a󠄁r󠄁t󠄁e󠄁d󠄁.󠄁
+`--next` c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁 e󠄁x󠄁a󠄁c󠄁t󠄁l󠄁y󠄁 t󠄁h󠄁e󠄁 n󠄁e󠄁x󠄁t󠄁 m󠄁a󠄁i󠄁n󠄁 t󠄁u󠄁r󠄁n󠄁,󠄁 t󠄁h󠄁e󠄁n󠄁 r󠄁e󠄁t󠄁u󠄁r󠄁n󠄁s󠄁 t󠄁o󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁;󠄁
+c󠄁h󠄁i󠄁l󠄁d󠄁 t󠄁u󠄁r󠄁n󠄁s󠄁 u󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 a󠄁n󠄁d󠄁 d󠄁o󠄁 n󠄁o󠄁t󠄁 c󠄁o󠄁n󠄁s󠄁u󠄁m󠄁e󠄁 t󠄁h󠄁a󠄁t󠄁 o󠄁v󠄁e󠄁r󠄁r󠄁i󠄁d󠄁e󠄁.󠄁 A󠄁n󠄁 a󠄁b󠄁o󠄁r󠄁t󠄁e󠄁d󠄁
+o󠄁r󠄁 e󠄁m󠄁p󠄁t󠄁y󠄁 m󠄁a󠄁i󠄁n󠄁 t󠄁u󠄁r󠄁n󠄁 c󠄁o󠄁n󠄁s󠄁u󠄁m󠄁e󠄁s󠄁 i󠄁t󠄁 t󠄁o󠄁o󠄁.󠄁 I󠄁t󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁 r󠄁e󠄁s󠄁p󠄁o󠄁n󠄁s󠄁e󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 o󠄁n󠄁l󠄁y󠄁,󠄁 s󠄁o󠄁 t󠄁h󠄁e󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁
+i󠄁t󠄁s󠄁e󠄁l󠄁f󠄁 u󠄁s󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁.󠄁 S󠄁t󠄁a󠄁t󠄁u󠄁s󠄁 s󠄁h󠄁o󠄁w󠄁s󠄁
+t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁,󠄁 p󠄁e󠄁n󠄁d󠄁i󠄁n󠄁g󠄁 o󠄁v󠄁e󠄁r󠄁r󠄁i󠄁d󠄁e󠄁 a󠄁n󠄁d󠄁 a󠄁c󠄁t󠄁i󠄁v󠄁e󠄁 t󠄁u󠄁r󠄁n󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁s󠄁.󠄁
+
+A󠄁l󠄁l󠄁 a󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁 b󠄁l󠄁o󠄁c󠄁k󠄁s󠄁 s󠄁h󠄁a󠄁r󠄁e󠄁 o󠄁n󠄁e󠄁 M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁x󠄁t󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁 t󠄁h󠄁e󠄁y󠄁 a󠄁r󠄁e󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁,󠄁 s󠄁o󠄁 a󠄁
+f󠄁e󠄁n󠄁c󠄁e󠄁 o󠄁r󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 l󠄁i󠄁t󠄁e󠄁r󠄁a󠄁l󠄁 s󠄁p󠄁a󠄁n󠄁n󠄁i󠄁n󠄁g󠄁 b󠄁l󠄁o󠄁c󠄁k󠄁s󠄁 s󠄁t󠄁a󠄁y󠄁s󠄁 p󠄁r󠄁o󠄁t󠄁e󠄁c󠄁t󠄁e󠄁d󠄁.󠄁 H󠄁o󠄁s󠄁t󠄁 p󠄁a󠄁s󠄁t󠄁e󠄁 t󠄁a󠄁g󠄁s󠄁 s󠄁i󠄁m󠄁i󠄁l󠄁a󠄁r󠄁l󠄁y󠄁
+s󠄁t󠄁a󠄁y󠄁 o󠄁u󠄁t󠄁s󠄁i󠄁d󠄁e󠄁 t󠄁h󠄁e󠄁 M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁x󠄁t󠄁 w󠄁h󠄁i󠄁l󠄁e󠄁 t󠄁h󠄁e󠄁i󠄁r󠄁 u󠄁s󠄁e󠄁r󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁s󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 t󠄁o󠄁g󠄁e󠄁t󠄁h󠄁e󠄁r󠄁.󠄁
+S󠄁t󠄁o󠄁r󠄁e󠄁d󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁n󠄁t󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁 d󠄁i󠄁s󠄁p󠄁l󠄁a󠄁y󠄁e󠄁d󠄁 b󠄁y󠄁t󠄁e󠄁s󠄁;󠄁 t󠄁h󠄁e󠄁 r󠄁e󠄁n󠄁d󠄁e󠄁r󠄁e󠄁r󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁y󠄁 a󠄁
+f󠄁r󠄁a󠄁g󠄁m󠄁e󠄁n󠄁t󠄁 a󠄁g󠄁a󠄁i󠄁n󠄁.󠄁 T󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁 m󠄁a󠄁y󠄁 s󠄁h󠄁o󠄁w󠄁 s󠄁t󠄁r󠄁e󠄁a󠄁m󠄁i󠄁n󠄁g󠄁 t󠄁e󠄁x󠄁t󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁t󠄁o󠄁r󠄁a󠄁g󠄁e󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁e󠄁.󠄁
+H󠄁i󠄁s󠄁t󠄁o󠄁r󠄁i󠄁c󠄁a󠄁l󠄁 r󠄁o󠄁w󠄁s󠄁 k󠄁e󠄁e󠄁p󠄁 t󠄁h󠄁e󠄁i󠄁r󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁 b󠄁y󠄁t󠄁e󠄁s󠄁.󠄁 R󠄁o󠄁w󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁i󠄁e󠄁s󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁 p󠄁i󠄁n󠄁n󠄁e󠄁d󠄁 f󠄁o󠄁r󠄁 t󠄁h󠄁i󠄁s󠄁
+r󠄁u󠄁n󠄁n󠄁i󠄁n󠄁g󠄁 p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 p󠄁r󠄁o󠄁c󠄁e󠄁s󠄁s󠄁,󠄁 i󠄁n󠄁c󠄁l󠄁u󠄁d󠄁i󠄁n󠄁g󠄁 h󠄁o󠄁t󠄁 r󠄁e󠄁l󠄁o󠄁a󠄁d󠄁s󠄁;󠄁 a󠄁 r󠄁e󠄁s󠄁u󠄁m󠄁e󠄁d󠄁 p󠄁r󠄁o󠄁c󠄁e󠄁s󠄁s󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁
+r󠄁e󠄁c󠄁o󠄁n󠄁s󠄁t󠄁r󠄁u󠄁c󠄁t󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁y󠄁 f󠄁o󠄁r󠄁 o󠄁l󠄁d󠄁 r󠄁o󠄁w󠄁s󠄁 o󠄁r󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁e󠄁 t󠄁h󠄁e󠄁m󠄁.󠄁
+
+T󠄁o󠄁 c󠄁o󠄁p󠄁y󠄁 a󠄁n󠄁 a󠄁l󠄁r󠄁e󠄁a󠄁d󠄁y󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 i󠄁t󠄁s󠄁 T󠄁e󠄁x󠄁t󠄁P󠄁r󠄁o󠄁v󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁,󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁 t󠄁h󠄁e󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁n󠄁 a󠄁
+s󠄁u󠄁p󠄁p󠄁o󠄁r󠄁t󠄁e󠄁d󠄁 f󠄁u󠄁l󠄁l󠄁s󠄁c󠄁r󠄁e󠄁e󠄁n󠄁 v󠄁i󠄁e󠄁w󠄁 a󠄁n󠄁d󠄁 r󠄁u󠄁n󠄁:󠄁
+
+```text
+/textprov copy --plain
+```
+
+T󠄁h󠄁i󠄁s󠄁 e󠄁x󠄁p󠄁l󠄁i󠄁c󠄁i󠄁t󠄁l󠄁y󠄁 c󠄁o󠄁p󠄁i󠄁e󠄁s󠄁 o󠄁n󠄁l󠄁y󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁i󠄁o󠄁n󠄁 t󠄁h󠄁r󠄁o󠄁u󠄁g󠄁h󠄁 t󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁 c󠄁l󠄁i󠄁p󠄁b󠄁o󠄁a󠄁r󠄁d󠄁 A󠄁P󠄁I󠄁.󠄁 W󠄁i󠄁t󠄁h󠄁 n󠄁o󠄁
+a󠄁v󠄁a󠄁i󠄁l󠄁a󠄁b󠄁l󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁i󠄁o󠄁n󠄁 o󠄁r󠄁 c󠄁l󠄁i󠄁p󠄁b󠄁o󠄁a󠄁r󠄁d󠄁,󠄁 i󠄁t󠄁 r󠄁e󠄁p󠄁o󠄁r󠄁t󠄁s󠄁 t󠄁h󠄁e󠄁 r󠄁e󠄁a󠄁s󠄁o󠄁n󠄁;󠄁 i󠄁t󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 g󠄁u󠄁e󠄁s󠄁s󠄁 a󠄁 p󠄁r󠄁i󠄁o󠄁r󠄁
+a󠄁n󠄁s󠄁w󠄁e󠄁r󠄁 o󠄁r󠄁 r󠄁e󠄁a󠄁d󠄁 t󠄁h󠄁e󠄁 s󠄁y󠄁s󠄁t󠄁e󠄁m󠄁 c󠄁l󠄁i󠄁p󠄁b󠄁o󠄁a󠄁r󠄁d󠄁.󠄁 O󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 c󠄁o󠄁p󠄁y󠄁i󠄁n󠄁g󠄁 k󠄁e󠄁e󠄁p󠄁s󠄁 t󠄁h󠄁e󠄁 t󠄁e󠄁x󠄁t󠄁'󠄁s󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁
+m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 A󠄁 t󠄁e󠄁r󠄁m󠄁i󠄁n󠄁a󠄁l󠄁 O󠄁S󠄁C󠄁 5󠄁2󠄁 w󠄁r󠄁i󠄁t󠄁e󠄁 c󠄁a󠄁n󠄁 b󠄁e󠄁 r󠄁e󠄁p󠄁o󠄁r󠄁t󠄁e󠄁d󠄁 a󠄁s󠄁 c󠄁o󠄁p󠄁i󠄁e󠄁d󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 c󠄁o󠄁n󠄁f󠄁i󠄁r󠄁m󠄁i󠄁n󠄁g󠄁 r󠄁e󠄁c󠄁e󠄁i󠄁p󠄁t󠄁;󠄁
+i󠄁n󠄁t󠄁e󠄁r󠄁a󠄁c󠄁t󠄁i󠄁v󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁i󠄁o󠄁n󠄁 a󠄁n󠄁d󠄁 t󠄁e󠄁r󠄁m󠄁i󠄁n󠄁a󠄁l󠄁 c󠄁l󠄁i󠄁p󠄁b󠄁o󠄁a󠄁r󠄁d󠄁 b󠄁e󠄁h󠄁a󠄁v󠄁i󠄁o󠄁r󠄁 n󠄁e󠄁e󠄁d󠄁 a󠄁 s󠄁e󠄁p󠄁a󠄁r󠄁a󠄁t󠄁e󠄁 t󠄁r󠄁i󠄁a󠄁l󠄁.󠄁
+D󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 a󠄁n󠄁d󠄁 C󠄁h󠄁r󠄁o󠄁n󠄁i󠄁c󠄁l󠄁e󠄁 o󠄁b󠄁s󠄁e󠄁r󠄁v󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 c󠄁a󠄁p󠄁t󠄁u󠄁r󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁i󠄁n󠄁u󠄁e󠄁 i󠄁n󠄁 e󠄁v󠄁e󠄁r󠄁y󠄁 c󠄁h󠄁a󠄁t󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁.󠄁
 
 ## Install
 
@@ -67,7 +117,7 @@ A plugin loaded this way reads its options from `pluginConfigs` in your user set
 
 ## Setup
 
-The plugin requires TextProv Python core 0.1.5 or newer with the public chronicle
+The plugin requires TextProv Python core 0󠄁.󠄁1󠄁.󠄁7󠄁 or newer with the public chronicle
 APIs for status, sessions, attributes, comparison, claim transfer and e󠄁x󠄁p󠄁o󠄁r󠄁t󠄁,󠄁 p󠄁l󠄁u󠄁s󠄁
 t󠄁h󠄁e󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 a󠄁n󠄁d󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁r󠄁-󠄁a󠄁w󠄁a󠄁r󠄁e󠄁 d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 e󠄁d󠄁i󠄁t󠄁i󠄁n󠄁g󠄁 A󠄁P󠄁I󠄁s󠄁.󠄁
 This development version is local; point `textprov_python` at the matching core
@@ -80,6 +130,7 @@ Claude Code asks for these options; they are also rows in `/config`:
 | `textprov_python` | The `python/` directory of a textprov checkout, the one that holds `textprov/chronicle.py`. Leave empty to use an installed `textprov` package. |
 | `python` | Interpreter that runs the bridge. Default `python3`, needs 3.9 or newer; the core uses only the standard library. |
 | `data_dir` | Where per-project chronicle databases live. Default `~/.claude/plugins/data/textprov`. |
+| `chat_marks` | D󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 c󠄁h󠄁a󠄁t󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁:󠄁 `prose` (󠄁d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁)󠄁,󠄁 `all`,󠄁 o󠄁r󠄁 `off`.󠄁 |
 
 Run `/textprov status` once: it reports the interpreter, whether the core and its
 `chronicle` module were found, and the database path for this project.
@@ -321,7 +372,7 @@ write its type declarations to `.claude-plugin/types/`; after that `tsc -p .`
 type-checks the module and tests. That folder is ignored by git.
 
 After the checks pass, start a separate feedback-only trial with the frozen
-plugin 0󠄁.󠄁1󠄁.󠄁4󠄁 and compatible core. Run `/textprov status` first and record its output
+plugin 0󠄁.󠄁1󠄁.󠄁5󠄁 and compatible core. Run `/textprov status` first and record its output
 unchanged, all component versions/commits, database observations, evidence and gaps
 in `../trials/YYYY-MMDD-N-<topic>.md` (`N` counts trials on that date). Check:
 
@@ -348,7 +399,7 @@ Layout:
 .claude-plugin/plugin.json       manifest, userConfig
 .claude-plugin/marketplace.json  this repository as a one-plugin marketplace
 hooks/hooks.json                 names the hooks module
-hooks/register.ts                the hooks: session.start, command.run, prompt.submit, turn.start, tool.call, session.append, ui.render, agent.spawn, turn.complete
+hooks/register.ts                the hooks: session.start, command.run, prompt.submit, turn.start, tool.call, session.append, agent.spawn, turn.complete
 hooks/bridge.ts                  runs scripts/textprov_bridge.py and parses its answer
 scripts/textprov_bridge.py       locates the core and the database; forwards one operation
 types/index.d.ts                 the $.state contract
