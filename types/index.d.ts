@@ -58,8 +58,11 @@ export type TextprovPending = {
 }
 
 /** A running turn, kept per loop ('main' or the agent id) from turn.start to turn.complete. */
+export type ChatScope = 'prose' | 'all' | 'off'
+
 export type TextprovTurn = {
   turnId: string
+  chatScope: ChatScope
   /** The delivery key of the submission that started the turn, when one was matched. */
   submission?: string
 }
@@ -83,6 +86,9 @@ declare module 'claude-code' {
       captureNamespace: string | null
       /** The slash command name the host accepted (`textprov`); null while none is registered. */
       command: string | null
+      chatScope: ChatScope | null
+      nextChatScope: ChatScope | null
+      messageScopes: Record<string, ChatScope>
     }
   }
 }
