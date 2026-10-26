@@ -65,6 +65,29 @@ class BridgeTest(unittest.TestCase):
         human = self.ok(dict(operation="mark_chat", text="Human words", role="user"))
         self.assertEqual(self.ok(dict(operation="mark_chat", text=human, role="assistant")), human)
 
+    def test_chat_scope_and_explicit_plain_copy_do_not_create_a_database(self):
+        source = "Prose. `git status`\n\n```sh\ngit status\n```\n"
+        marked = self.ok(dict(operation="mark_chat", text=source, role="assistant", scope="prose"))
+        self.assertNotEqual(marked, source)
+        self.assertIn("`git status`", marked)
+        self.assertIn("```sh\ngit status\n```", marked)
+        self.assertEqual(self.ok(dict(operation="strip_marks", text=marked)), source)
+        self.assertEqual(self.ok(dict(operation="mark_chat", text=marked, role="assistant", scope="off")), marked)
+        all_marked = self.ok(dict(operation="mark_chat", text=source, role="assistant", scope="all"))
+        self.assertNotIn("git status", all_marked)
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
+        self.assertEqual(self.call(dict(operation="mark_chat", text=source, role="assistant", scope="invalid")).returncode, 1)
+
+    def test_chat_parts_keep_fences_across_blocks_and_original_boundaries(self):
+        parts = ["Prose.\n```sh\n", "git status\n```\n", "Tail 🧪."]
+        marked = self.ok(dict(operation="mark_chat_parts", parts=parts, role="assistant", scope="prose"))
+        self.assertEqual(len(marked), len(parts))
+        self.assertEqual(marked[1], parts[1])
+        self.assertNotEqual(marked[0], parts[0])
+        self.assertNotEqual(marked[2], parts[2])
+        for source, target in zip(parts, marked):
+            self.assertEqual(self.ok(dict(operation="strip_marks", text=target)), source)
+
     def test_whole_write_and_marker_insensitive_edit_preserve_existing_text(self):
         human = self.ok(dict(operation="mark_chat", text="Original words", role="user"))
         old = human + "\n\nUntouched editor prose.\n"
@@ -198,7 +221,7 @@ class BridgeTest(unittest.TestCase):
         stub = Path(self.temp.name) / "public-api"
         package = stub / "textprov"
         package.mkdir(parents=True)
-        (package / "__init__.py").write_text("__version__ = '0.1.5'\n")
+        (package / "__init__.py").write_text("__version__ = '0.1.7'\n")
         (package / "chronicle.py").write_text('''
 class Chronicle:
     def __init__(self, path): pass
@@ -243,8 +266,8 @@ class Chronicle:
         package = stub / "textprov"
         package.mkdir(parents=True)
         (package / "chronicle.py").write_text("class Chronicle: pass\n")
-        for version, message in (("0.1.4", "0.1.5 or newer is required"),
-                                 ("0.1.5", "incompatible Chronicle.observe API")):
+        for version, message in (("0.1.6", "0.1.7 or newer is required"),
+                                 ("0.1.7", "incompatible Chronicle.observe API")):
             (package / "__init__.py").write_text("__version__ = %r\n" % version)
             argv = [sys.executable, "-B", str(BRIDGE), "--root", str(self.root), "--data-dir", str(self.data),
                     "--textprov-python", str(stub)]
