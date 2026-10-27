@@ -1,6 +1,7 @@
 # Written by Claude Code when it loads the plugin from this folder.
 .claude-plugin/types/
 .mcpb-cache/
+.remember
 
 __pycache__/
 *.pyc
