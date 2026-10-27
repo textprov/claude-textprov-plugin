@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, PluginOptions, Register, ToolCallResult } from 'claude-code'
 
 import type {
+  ChatScope,
   TextprovCapture,
   TextprovFailure,
   TextprovObservation,
@@ -15,7 +16,7 @@ import { bridge } from './bridge'
 // explicit voice claims remain an advanced, separate operation.
 
 const PROVIDER = 'claude'
-const VERSION = '0.1.4' // keep in step with .claude-plugin/plugin.json
+const VERSION = '0.1.5' // keep in step with .claude-plugin/plugin.json
 const ADAPTER = `claude-textprov-plugin/${VERSION}`
 const COMMAND = 'textprov'
 const KEEP = 500
@@ -41,6 +42,23 @@ const since = atom({ plugin: 'textprov', key: 'since' } as const, null as string
 const captureNamespace = atom({ plugin: 'textprov', key: 'captureNamespace' } as const, null as string | null)
 /** The command name the host accepted, or null while none is registered. */
 const command = atom({ plugin: 'textprov', key: 'command' } as const, null as string | null)
+const chatScope = atom({ plugin: 'textprov', key: 'chatScope' } as const, null as ChatScope | null)
+const nextChatScope = atom({ plugin: 'textprov', key: 'nextChatScope' } as const, null as ChatScope | null)
+// Pin a stored row before forwarding it, so a retried append keeps its policy.
+const messageScopes = atom({ plugin: 'textprov', key: 'messageScopes' } as const, {} as Record<string, ChatScope>)
+
+function scopeValue(value: unknown): ChatScope | undefined {
+  return value === 'prose' || value === 'all' || value === 'off' ? value : undefined
+}
+
+async function effectiveScope($: EngineInterface, options: PluginOptions): Promise<ChatScope> {
+  return (await read($, chatScope)) ?? scopeValue(options.chat_marks) ?? 'prose'
+}
+
+async function assistantScope($: EngineInterface, options: PluginOptions, agentId?: string): Promise<ChatScope> {
+  return (await read($, turns))[agentId ?? MAIN]?.chatScope ?? await effectiveScope($, options)
+}
+
 
 async function nextSequence($: EngineInterface): Promise<number> {
   let value = 0
@@ -238,19 +256,36 @@ async function marking($: EngineInterface, options: PluginOptions, operation: st
   return ran.result
 }
 
-/** Host paste tags are framing, not the user's message text. */
+async function markingParts($: EngineInterface, options: PluginOptions, parts: string[], role: 'user' | 'assistant', scope: ChatScope): Promise<string[] | undefined> {
+  const ran = await bridge($, options, { operation: 'mark_chat_parts', parts, role, scope })
+  if (!ran.ok || !Array.isArray(ran.result) || ran.result.length !== parts.length || ran.result.some(part => typeof part !== 'string')) {
+    await fail($, 'marking', ran.ok ? 'core returned no marked message parts' : ran.error)
+    return undefined
+  }
+  return ran.result as string[]
+}
+
+/** Host paste tags are framing; classify all message text together without them. */
 async function humanPrompt($: EngineInterface, options: PluginOptions, text: string): Promise<string> {
-  const mark = async (part: string) => part === '' ? '' : (await marking($, options, 'mark_chat', { text: part, role: 'user' })) ?? part
-  const parts: string[] = []
+  const scope = await effectiveScope($, options)
+  const matches = [...text.matchAll(PASTE)]
+  if (matches.length === 0) return (await marking($, options, 'mark_chat', { text, role: 'user', scope })) ?? text
+  const chunks: { text: string; frame?: true }[] = []
   let cursor = 0
-  for (const match of text.matchAll(PASTE)) {
-    parts.push(await mark(text.slice(cursor, match.index)))
+  for (const match of matches) {
     const openingEnd = match[0].indexOf('>') + 1
-    parts.push(match[0].slice(0, openingEnd), await mark(match[2]!), match[0].slice(openingEnd + match[2]!.length))
+    chunks.push({ text: text.slice(cursor, match.index) },
+      { text: match[0].slice(0, openingEnd), frame: true },
+      { text: match[2]! },
+      { text: match[0].slice(openingEnd + match[2]!.length), frame: true })
     cursor = match.index! + match[0].length
   }
-  parts.push(await mark(text.slice(cursor)))
-  return parts.join('')
+  chunks.push({ text: text.slice(cursor) })
+  const parts = chunks.filter(chunk => !chunk.frame && chunk.text !== '').map(chunk => chunk.text)
+  const marked = await markingParts($, options, parts, 'user', scope)
+  if (marked === undefined) return text
+  let index = 0
+  return chunks.map(chunk => chunk.frame || chunk.text === '' ? chunk.text : marked[index++]!).join('')
 }
 
 const PROSE = /\.(?:md|markdown|txt|rst|adoc|mdx)$/i
@@ -280,6 +315,8 @@ function help(slash: string): string {
     `${slash} list --session [--cross-agent] [--limit N] [--before <id>]`,
     `${indent}page durable session metadata with full observation IDs`,
     `${slash} status               bridge, core, database and plugin state`,
+    `${slash} prose|all|off [--next]    session default, or next main turn only`,
+    `${slash} copy --plain         copy selected text without TextProv marks`,
     `${slash} inspect <id> [--cross-agent]    metadata, ID joins, claims and text expiry`,
     `${slash} match <src> <dst> [--policy exact-v1|line-endings-v1|common-indent-v1]`,
     `${indent}[--partial] [--min-chars N] [--cross-agent]`,
@@ -368,6 +405,9 @@ async function pluginStatus($: EngineInterface, options: PluginOptions): Promise
     host_version: host.version,
     session_id: await $.session.id(),
     command: await read($, command),
+    chat_marks: await effectiveScope($, options),
+    next_chat_marks: await read($, nextChatScope),
+    active_chat_marks: Object.fromEntries(Object.entries(await read($, turns)).map(([loop, turn]) => [loop, turn.chatScope])),
     since: await read($, since),
     capture_namespace: await read($, captureNamespace),
     sequence: await read($, sequence),
@@ -473,6 +513,25 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
   const words = args.trim().split(/\s+/).filter(word => word !== '')
   const verb = words[0] ?? 'list'
   switch (verb) {
+    case 'prose':
+    case 'all':
+    case 'off': {
+      const scope = verb
+      const nextOnly = words[1] === '--next'
+      if (words.length !== (nextOnly ? 2 : 1)) return `usage: ${slash} prose|all|off [--next]`
+      if (nextOnly) await update($, nextChatScope, () => scope)
+      else await update($, chatScope, () => scope)
+      return `Chat marks: ${scope} (${nextOnly ? 'next main turn only' : 'new turns and prompts in this session'}). Existing marks are preserved.`
+    }
+    case 'copy': {
+      if (words.length !== 2 || words[1] !== '--plain') return `usage: ${slash} copy --plain`
+      const selected = await $.ui.selection()
+      if (selected === undefined || selected.text === '') return 'No selected text is available. Select text in a supported fullscreen view, then run this command.'
+      const text = await marking($, options, 'strip_marks', { text: selected.text })
+      if (text === undefined) return 'TextProv could not prepare plain text; inspect /textprov status.'
+      const copied = await $.ui.copy({ text })
+      return copied.isCopied ? 'Copied selected text without TextProv marks.' : `Selected text was not copied: ${copied.reason}.`
+    }
     case 'list':
       return words.length <= 1 ? listing($, options) : sessionListing($, options, words.slice(1), slash)
     case 'help':
@@ -550,8 +609,8 @@ async function serveCommand($: EngineInterface): Promise<void> {
   try {
     await $.command.register({
       name: COMMAND,
-      description: 'TextProv attribution chronicle: inspect, compare, claim, transfer, resolve and export',
-      argumentHint: '[list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
+      description: 'TextProv: control chat marks, copy plain text, inspect and manage attribution',
+      argumentHint: '[prose|all|off [--next]|copy --plain|list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
     })
     await update($, command, () => COMMAND)
   } catch (error) {
@@ -687,7 +746,15 @@ export const register: Register = (on, options) => {
         await update($, pending, () => null)
       }
     }
-    const turn: TextprovTurn = { turnId: e.turnId, ...(submission === undefined ? {} : { submission }) }
+    let scope = await effectiveScope($, options)
+    if (e.agentId === undefined) {
+      const once = await read($, nextChatScope)
+      if (once !== null) {
+        scope = once
+        await update($, nextChatScope, () => null)
+      }
+    }
+    const turn: TextprovTurn = { turnId: e.turnId, chatScope: scope, ...(submission === undefined ? {} : { submission }) }
     await update($, turns, map => ({ ...map, [e.agentId ?? MAIN]: turn }))
     return next(e)
   })
@@ -735,19 +802,21 @@ export const register: Register = (on, options) => {
   // image and thinking blocks pass through unchanged.
   on('session.append', { door: 'response' }, async ($, e, next) => {
     if (e.message.type !== 'assistant') return next(e)
-    const content = []
-    for (const block of e.message.content) {
-      if (block.type !== 'text' || typeof block.text !== 'string') { content.push(block); continue }
-      const text = await marking($, options, 'mark_chat', { text: block.text, role: 'assistant' })
-      content.push(text === undefined ? block : { ...block, text })
-    }
+    const pinned = (await read($, messageScopes))[e.uuid]
+    const scope = pinned ?? await assistantScope($, options, e.agentId)
+    if (pinned === undefined) await update($, messageScopes, map => ({ ...map, [e.uuid]: scope }))
+    const textBlocks = e.message.content.filter(block => block.type === 'text' && typeof block.text === 'string')
+    const parts = await markingParts($, options, textBlocks.map(block => String(block.text)), 'assistant', scope)
+    if (parts === undefined) return next(e)
+    let index = 0
+    const content = e.message.content.map(block => block.type === 'text' && typeof block.text === 'string'
+      ? { ...block, text: parts[index++]! } : block)
     return next({ ...e, message: { ...e.message, content } })
   })
 
-  on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
-    const text = await marking($, options, 'mark_chat', { text: e.props.text, role: 'assistant' })
-    return next(text === undefined ? e : { ...e, props: { ...e.props, text } })
-  })
+  // Stored content is authoritative. A render can contain only a fragment of a
+  // multi-block Markdown message, so classifying it again could mark fenced code.
+  // Streaming text and historical rows retain the exact bytes the host supplies.
 
   // The task a subagent is given is assistant text written in the parent's
   // loop. It is recorded there with the Agent call's id and the started agent's
@@ -790,8 +859,9 @@ export const register: Register = (on, options) => {
         kind: 'assistant_message',
         channel: 'assistant',
         visibility: 'display',
-        text: (await marking($, options, 'mark_chat', { text: e.answer, role: 'assistant' })) ?? e.answer,
+        text: (await marking($, options, 'mark_chat', { text: e.answer, role: 'assistant', scope: started?.chatScope ?? await effectiveScope($, options) })) ?? e.answer,
         completeness: e.isAborted ? 'partial' : 'complete',
+        attributes: { chat_marks: started?.chatScope ?? await effectiveScope($, options) },
         hostIds: {
           turn: e.turnId,
           ...(started?.submission === undefined ? {} : { prompt: started.submission }),

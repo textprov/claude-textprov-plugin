@@ -1,8 +1,8 @@
 {
   "name": "textprov",
   "displayName": "TextProv attribution chronicle",
-  "version": "0.1.4",
-  "description": "Automatically marks human chat and AI output, preserves provenance during prose edits, and records observations in the shared TextProv chronicle.",
+  "version": "0.1.5",
+  "description": "Marks chat prose by default, supports scope and plain-copy controls, preserves provenance during prose edits, and records observations in the shared TextProv chronicle.",
   "author": { "name": "TextProv contributors", "url": "https://textprov.org" },
   "homepage": "https://github.com/textprov/textprov",
   "repository": "https://github.com/textprov/claude-textprov-plugin",
@@ -25,6 +25,17 @@
       "type": "directory",
       "title": "Chronicle data directory",
       "description": "Where per-project chronicle databases are kept. Leave empty for ~/.claude/plugins/data/textprov."
+    },
+    "chat_marks": {
+      "type": "string",
+      "title": "Chat marks",
+      "description": "Mark prose by default; all also marks code and commands. Off stops adding chat marks and preserves existing marks.",
+      "options": [
+        "prose",
+        "all",
+        "off"
+      ],
+      "default": "prose"
     }
   }
 }

@@ -20,6 +20,9 @@ type Fixture = {
   tools?: Request[]
   marker?: (request: Request) => unknown
   refused?: Record<string, string>
+  selection?: { text: string; requestId?: string }
+  copies?: string[]
+  copyRefused?: boolean
 }
 
 /** Stands in for the engine and for the Python bridge: every request is kept, every observe answered with a fresh id. */
@@ -41,6 +44,12 @@ function engine(
   on('fs.exists', () => ({ value: false }))
   on('fs.read', () => ({ value: 'old' }))
   on('ui.status', () => ({ value: undefined }))
+  on('ui.selection', () => ({ value: fixture.selection }))
+  on('ui.copy', (_, e) => {
+    if (fixture.copyRefused) return { value: { isCopied: false, reason: 'no-clipboard' } }
+    fixture.copies?.push(e.text)
+    return { value: { isCopied: true } }
+  })
   on('clock.after', () => ({ value: undefined }))
   on('store.get', (_, e) => ({ value: fixture.store[e.key] }))
   on('store.set', (_, e) => {
@@ -62,11 +71,12 @@ function engine(
     fixture.requests.push(request)
     // Default identity marking keeps transport tests focused on correlation.
     // Dedicated marking tests below assert rewritten arguments separately.
-    const policyResult = request.operation === 'mark_chat' ? request.text
+    const policyResult = request.operation === 'mark_chat_parts' ? (request.parts as string[]).map(part => fixture.marker?.({ ...request, operation: 'mark_chat', text: part }) ?? part)
+      : request.operation === 'mark_chat' ? request.text
       : request.operation === 'mark_document_edit' ? request.new_text
       : request.operation === 'prepare_edit' ? { old_string: request.old_string, new_string: request.new_string }
       : undefined
-    const given = policyResult !== undefined ? (fixture.marker?.(request) ?? policyResult) : bridge?.(request)
+    const given = request.operation === 'mark_chat_parts' ? policyResult : policyResult !== undefined ? (fixture.marker?.(request) ?? policyResult) : bridge?.(request)
     if (given instanceof Refusal) {
       return {
         value: { exitCode: 1, stdout: '', stderr: JSON.stringify({ error: given.message }), isStdoutTruncated: false, isStderrTruncated: false },
@@ -100,7 +110,7 @@ test('a submission is observed as stored user text, with no claim', async ($, on
   expect(one.text).toBe('Keep the original wording.')
   expect(one.session_id).toBe('session-test')
   expect(one.provider).toBe('claude')
-  expect(one.adapter).toBe('claude-textprov-plugin/0.1.4')
+  expect(one.adapter).toBe('claude-textprov-plugin/0.1.5')
   expect(one.completeness).toBe('complete')
   expect(one.attributes).toEqual({ prompt_origin: 'composer' })
 })
@@ -371,8 +381,8 @@ test('the list command shows what was captured and the status command adds the p
 
   const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
   expect(status.text).toContain('"available": true')
-  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.4"')
-  expect(status.text).toContain('"loaded_version": "0.1.4"')
+  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.5"')
+  expect(status.text).toContain('"loaded_version": "0.1.5"')
   expect(status.text).toContain('"session_id": "session-test"')
   expect(status.text).toContain('"host_version": "0.0.0-test"')
   expect(status.text).toContain('"observations": 1')
@@ -447,7 +457,7 @@ test('inspection and explicit claim support forward cross-agent consent', async 
   expect(claim.content_hash).toBe('current-hash')
   expect(claim.voice_definition).toBe('definition with --literal')
   expect(claim.basis).toBe('user_command')
-  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.4')
+  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.5')
 })
 
 test('invalid comparison and claim flags are refused before comparison or claims', async ($, on) => {
@@ -709,8 +719,10 @@ test('assistant rendered copy text uses the shared marking policy', async ($, on
   engine(on, f)
   on('ui.render', { component: 'AssistantMessage' }, (_, e) => ({ type: 'Text', children: [e.props.text] }))
   await $.session.start(SESSION)
+  const stored = await $.session.append({ door: 'response', origin: { kind: 'model', model: 'test' }, uuid: 'answer-1',
+    message: { type: 'assistant', role: 'assistant', content: [{ type: 'text', text: 'answer' }] } })
   const rendered = await $.ui.render({ surface: 'terminal', component: 'AssistantMessage', requestId: 'answer-1',
-    props: { text: 'answer', isFirstOfReply: true } })
+    props: { text: String(stored.message!.content[0]!.text), isFirstOfReply: true } })
   expect(rendered).toMatchObject({ type: 'Text', children: ['answer [AI marked]'] })
 })
 
@@ -723,4 +735,124 @@ test('paste framing stays parseable while its user text is marked', async ($, on
   const entered = await $.prompt.submit({ text: 'Look <pasted_content id="p1">pasted</pasted_content id="p1">', wait: false, origin: ORIGIN })
   expect(entered.text).toBe('Look  [human]<pasted_content id="p1">pasted [human]</pasted_content id="p1">')
   expect(observed(f.requests).find(one => one.event_kind === 'pasted_block')!.text).toBe('pasted [human]')
+})
+
+
+test('prose is the default for human ingress and stored assistant text', async ($, on) => {
+  const f = fixture()
+  engine(on, f)
+  await $.session.start(SESSION)
+  await $.prompt.submit({ text: 'Use `git status`.', wait: false, origin: ORIGIN })
+  await $.session.append({ door: 'response', origin: { kind: 'model', model: 'test' }, uuid: 'default-1',
+    message: { type: 'assistant', role: 'assistant', content: [{ type: 'text', text: 'Run `git status`.' }] } })
+  const calls = f.requests.filter(one => one.operation === 'mark_chat' || one.operation === 'mark_chat_parts')
+  expect(calls.map(one => [one.role, one.scope])).toEqual([['user', 'prose'], ['assistant', 'prose']])
+})
+
+test('session changes affect new turns while stored messages and active turns keep their modes', async ($, on) => {
+  const f = fixture()
+  f.marker = request => `${request.text} [${request.scope}]`
+  engine(on, f)
+  on('ui.render', { component: 'AssistantMessage' }, (_, e) => ({ type: 'Text', children: [e.props.text] }))
+  await $.session.start(SESSION)
+  await $.turn.start({ turnId: 'turn-1', text: 'first' })
+  await $.command.run({ command: 'textprov', args: 'off', origin: ORIGIN, presentation: PRESENTATION })
+  const first = await $.session.append({ door: 'response', origin: { kind: 'model', model: 'test' }, uuid: 'pinned-1',
+    message: { type: 'assistant', role: 'assistant', content: [{ type: 'text', text: 'first' }] } })
+  expect(first.message!.content[0]!.text).toBe('first [prose]')
+  const redraw = await $.ui.render({ surface: 'terminal', component: 'AssistantMessage', requestId: 'pinned-1', props: { text: String(first.message!.content[0]!.text), isFirstOfReply: true } })
+  expect(redraw).toMatchObject({ type: 'Text', children: ['first [prose]'] })
+  const unknown = await $.ui.render({ surface: 'terminal', component: 'AssistantMessage', requestId: 'historic-1', props: { text: 'history', isFirstOfReply: true } })
+  expect(unknown).toMatchObject({ type: 'Text', children: ['history'] })
+  await $.turn.complete({ turnId: 'turn-1', answer: 'first', isAborted: false, durationMs: 10, reason: 'answer' })
+  expect(observed(f.requests).find(one => one.event_kind === 'assistant_message')!.text).toBe('first [prose]')
+  await $.turn.start({ turnId: 'turn-2', text: 'second' })
+  await $.turn.complete({ turnId: 'turn-2', answer: 'second', isAborted: false, durationMs: 10, reason: 'answer' })
+  expect(observed(f.requests).at(-1)!.text).toBe('second [off]')
+  const prompt = await $.prompt.submit({ text: 'next prompt', wait: false, origin: ORIGIN })
+  expect(prompt.text).toBe('next prompt [off]')
+  const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
+  expect(status.text).toContain('"chat_marks": "off"')
+})
+
+test('next mode is consumed by exactly one main turn and never a child turn', async ($, on) => {
+  const f = fixture()
+  f.marker = request => `${request.text} [${request.scope}]`
+  engine(on, f)
+  await $.session.start(SESSION)
+  await $.command.run({ command: 'textprov', args: 'all --next', origin: ORIGIN, presentation: PRESENTATION })
+  await $.turn.start({ turnId: 'child', text: 'child', agentId: 'agent-1' })
+  await $.turn.complete({ turnId: 'child', answer: 'child', agentId: 'agent-1', isAborted: false, durationMs: 10, reason: 'answer' })
+  await $.turn.start({ turnId: 'one', text: 'one' })
+  await $.turn.complete({ turnId: 'one', answer: 'one', isAborted: false, durationMs: 10, reason: 'answer' })
+  await $.turn.start({ turnId: 'two', text: 'two' })
+  await $.turn.complete({ turnId: 'two', answer: 'two', isAborted: false, durationMs: 10, reason: 'answer' })
+  expect(observed(f.requests).filter(one => one.event_kind === 'assistant_message').map(one => one.text)).toEqual(['child [prose]', 'one [all]', 'two [prose]'])
+  const invalid = await $.command.run({ command: 'textprov', args: 'all unknown', origin: ORIGIN, presentation: PRESENTATION })
+  expect(invalid.text).toContain('usage:')
+})
+
+test('plain copy is explicit, selected-text-only, and reports unavailable selection and clipboard', async ($, on) => {
+  const f = fixture()
+  f.copies = []
+  engine(on, f, request => request.operation === 'strip_marks' ? 'git status' : undefined)
+  await $.session.start(SESSION)
+  const absent = await $.command.run({ command: 'textprov', args: 'copy --plain', origin: ORIGIN, presentation: PRESENTATION })
+  expect(absent.text).toContain('No selected text')
+  expect(f.copies).toEqual([])
+  f.selection = { text: 'marked command' }
+  const copied = await $.command.run({ command: 'textprov', args: 'copy --plain', origin: ORIGIN, presentation: PRESENTATION })
+  expect(copied.text).toContain('Copied selected text')
+  expect(f.copies).toEqual(['git status'])
+  f.copyRefused = true
+  const refused = await $.command.run({ command: 'textprov', args: 'copy --plain', origin: ORIGIN, presentation: PRESENTATION })
+  expect(refused.text).toContain('no-clipboard')
+  expect(f.requests.filter(one => one.operation === 'strip_marks').map(one => one.text)).toEqual(['marked command', 'marked command'])
+  expect(observed(f.requests)).toEqual([])
+})
+
+
+test('stored response marking receives all text blocks together and drawing never reclassifies a fragment', async ($, on) => {
+  const f = fixture()
+  engine(on, f)
+  on('ui.render', { component: 'AssistantMessage' }, (_, e) => ({ type: 'Text', children: [e.props.text] }))
+  await $.session.start(SESSION)
+  const response = await $.session.append({ door: 'response', origin: { kind: 'model', model: 'test' }, uuid: 'split-fence',
+    message: { type: 'assistant', role: 'assistant', content: [
+      { type: 'text', text: '```sh\n' },
+      { type: 'thinking', thinking: 'private' },
+      { type: 'text', text: 'git status\n```' },
+    ] } })
+  expect(f.requests.find(one => one.operation === 'mark_chat_parts')!.parts).toEqual(['```sh\n', 'git status\n```'])
+  expect(response.message!.content[1]!.thinking).toBe('private')
+  const before = f.requests.length
+  const rendered = await $.ui.render({ surface: 'terminal', component: 'AssistantMessage', requestId: 'split-fence', props: { text: 'git status\n```', isFirstOfReply: false } })
+  expect(rendered).toMatchObject({ type: 'Text', children: ['git status\n```'] })
+  expect(f.requests.length).toBe(before)
+})
+
+
+for (const scope of ['all', 'off'] as const) {
+  test(`configured chat scope ${scope} controls ingress and new assistant messages`, { options: { chat_marks: scope } }, async ($, on) => {
+    const f = fixture()
+    engine(on, f)
+    await $.session.start(SESSION)
+    await $.prompt.submit({ text: 'configured prompt', wait: false, origin: ORIGIN })
+    await $.session.append({ door: 'response', origin: { kind: 'model', model: 'test' }, uuid: `configured-${scope}`,
+      message: { type: 'assistant', role: 'assistant', content: [{ type: 'text', text: 'configured response' }] } })
+    expect(f.requests.filter(one => one.operation === 'mark_chat' || one.operation === 'mark_chat_parts').map(one => one.scope)).toEqual([scope, scope])
+  })
+}
+
+test('framed paste text shares Markdown context while host tags remain unchanged', async ($, on) => {
+  const f = fixture()
+  engine(on, f)
+  await $.session.start(SESSION)
+  const text = '```sh\n<pasted_content id="p1">git status</pasted_content id="p1">\n```'
+  const result = await $.prompt.submit({ text, wait: false, origin: ORIGIN })
+  expect(result.text).toBe(text)
+  const call = f.requests.find(one => one.operation === 'mark_chat_parts')!
+  expect(call.parts).toEqual(['```sh\n', 'git status', '\n```'])
+  expect(call.role).toBe('user')
+  expect(call.scope).toBe('prose')
 })

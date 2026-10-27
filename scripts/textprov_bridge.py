@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 OPERATIONS = ("observe", "match", "claim", "inspect", "transfer", "resolve", "export", "list_observations")
-MIN_CORE = (0, 1, 5)
+MIN_CORE = (0, 1, 7)
 REQUIRED_PARAMETERS = {
     "observe": ("attributes",), "session": ("provider", "session_id"),
     "status": (), "inspect": ("cross_agent",),
@@ -65,13 +65,13 @@ def load_core(checkout):
     version = getattr(textprov, "__version__", None)
     parsed = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:\+[^\s]+)?", version or "")
     if parsed is None or tuple(map(int, parsed.groups())) < MIN_CORE:
-        raise RuntimeError("TextProv core 0.1.5 or newer is required; loaded %s from %s" %
+        raise RuntimeError("TextProv core 0.1.7 or newer is required; loaded %s from %s" %
                            (str(version)[:80], textprov.__file__))
     for method, parameters in REQUIRED_PARAMETERS.items():
         implementation = getattr(getattr(chronicle, "Chronicle", None), method, None)
         if not callable(implementation) or any(
                 name not in inspect.signature(implementation).parameters for name in parameters):
-            raise RuntimeError("TextProv core has an incompatible Chronicle.%s API; core 0.1.5 or newer is required" % method)
+            raise RuntimeError("TextProv core has an incompatible Chronicle.%s API; core 0.1.7 or newer is required" % method)
     return textprov, chronicle
 
 
@@ -95,7 +95,7 @@ def status(args, database):
         "available": True,
         "module": textprov.__file__,
         "version": getattr(textprov, "__version__", None),
-        "minimum_version": "0.1.5",
+        "minimum_version": "0.1.7",
     }
     if database.exists():
         with chronicle.Chronicle(database) as instance:
@@ -152,7 +152,7 @@ def main(argv=None):
                 raise ValueError("document edit anchor not found")
             print(json.dumps({"result": {"old_string": prepared[0], "new_string": prepared[1]}}, ensure_ascii=False))
             return 0
-        if operation in ("mark_chat", "mark_document", "mark_document_edit"):
+        if operation in ("mark_chat", "mark_document", "mark_document_edit", "strip_marks", "mark_chat_parts"):
             textprov, _ = load_core(args.textprov_python)
             function = getattr(textprov, operation, None)
             if not callable(function):
