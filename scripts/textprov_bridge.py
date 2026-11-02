@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 OPERATIONS = ("observe", "match", "claim", "inspect", "transfer", "resolve", "export", "list_observations")
-MIN_CORE = (0, 1, 7)
+MIN_CORE = (0, 3, 1)
 REQUIRED_PARAMETERS = {
     "observe": ("attributes",), "session": ("provider", "session_id"),
     "status": (), "inspect": ("cross_agent",),
@@ -65,13 +65,13 @@ def load_core(checkout):
     version = getattr(textprov, "__version__", None)
     parsed = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:\+[^\s]+)?", version or "")
     if parsed is None or tuple(map(int, parsed.groups())) < MIN_CORE:
-        raise RuntimeError("TextProv core 0.1.7 or newer is required; loaded %s from %s" %
+        raise RuntimeError("TextProv core 0.3.1 or newer is required; loaded %s from %s" %
                            (str(version)[:80], textprov.__file__))
     for method, parameters in REQUIRED_PARAMETERS.items():
         implementation = getattr(getattr(chronicle, "Chronicle", None), method, None)
         if not callable(implementation) or any(
                 name not in inspect.signature(implementation).parameters for name in parameters):
-            raise RuntimeError("TextProv core has an incompatible Chronicle.%s API; core 0.1.7 or newer is required" % method)
+            raise RuntimeError("TextProv core has an incompatible Chronicle.%s API; core 0.3.1 or newer is required" % method)
     return textprov, chronicle
 
 
@@ -95,7 +95,7 @@ def status(args, database):
         "available": True,
         "module": textprov.__file__,
         "version": getattr(textprov, "__version__", None),
-        "minimum_version": "0.1.7",
+        "minimum_version": "0.3.1",
     }
     if database.exists():
         with chronicle.Chronicle(database) as instance:
@@ -147,7 +147,7 @@ def main(argv=None):
             from textprov.editing import rewrite_edit
             prepared = rewrite_edit(request["raw"], request["old_string"], request["new_string"],
                                     replace_all=request.get("replace_all", False), shingles=set(),
-                                    preserve_new_marks=True)
+                                    preserve_new_marks=True, marking_mode=request.get("marking_mode", "prose"))
             if prepared is None:
                 raise ValueError("document edit anchor not found")
             print(json.dumps({"result": {"old_string": prepared[0], "new_string": prepared[1]}}, ensure_ascii=False))
