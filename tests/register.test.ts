@@ -110,7 +110,7 @@ test('a submission is observed as stored user text, with no claim', async ($, on
   expect(one.text).toBe('Keep the original wording.')
   expect(one.session_id).toBe('session-test')
   expect(one.provider).toBe('claude')
-  expect(one.adapter).toBe('claude-textprov-plugin/0.1.6')
+  expect(one.adapter).toBe('claude-textprov-plugin/0.1.7')
   expect(one.completeness).toBe('complete')
   expect(one.attributes).toEqual({ prompt_origin: 'composer' })
 })
@@ -381,8 +381,8 @@ test('the list command shows what was captured and the status command adds the p
 
   const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
   expect(status.text).toContain('"available": true')
-  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.6"')
-  expect(status.text).toContain('"loaded_version": "0.1.6"')
+  expect(status.text).toContain('"adapter": "claude-textprov-plugin/0.1.7"')
+  expect(status.text).toContain('"loaded_version": "0.1.7"')
   expect(status.text).toContain('"session_id": "session-test"')
   expect(status.text).toContain('"host_version": "0.0.0-test"')
   expect(status.text).toContain('"observations": 1')
@@ -457,7 +457,7 @@ test('inspection and explicit claim support forward cross-agent consent', async 
   expect(claim.content_hash).toBe('current-hash')
   expect(claim.voice_definition).toBe('definition with --literal')
   expect(claim.basis).toBe('user_command')
-  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.6')
+  expect(claim.policy_version).toBe('claude-textprov-plugin/0.1.7')
 })
 
 test('invalid comparison and claim flags are refused before comparison or claims', async ($, on) => {

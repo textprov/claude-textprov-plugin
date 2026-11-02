@@ -1,7 +1,7 @@
 {
   "name": "textprov",
   "displayName": "TextProv attribution chronicle",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Marks file/document prose by default, supports all/prose/none/remove modes, and records observations in the shared TextProv chronicle.",
   "author": { "name": "TextProv contributors", "url": "https://textprov.org" },
   "homepage": "https://github.com/textprov/textprov",

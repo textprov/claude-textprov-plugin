@@ -107,6 +107,42 @@ class BridgeTest(unittest.TestCase):
         self.assertEqual(result["old_string"], "Original words")
         self.assertEqual(result["new_string"], marked)
 
+    def test_prepare_edit_uses_supported_core_api_in_every_marking_mode(self):
+        marked = self.ok(dict(operation="mark_chat", text="Supplied", role="assistant", scope="all"))
+        for mode in ("prose", "all", "none", "off", "remove"):
+            with self.subTest(mode=mode):
+                prepared = self.ok(dict(operation="prepare_edit", raw="Before\nOld words\nAfter\n",
+                                        old_string="Old words", new_string=marked + " fresh", marking_mode=mode))
+                if mode in ("prose", "all"):
+                    fresh = self.ok(dict(operation="mark_chat", text="fresh", role="assistant", scope="all"))
+                    expected = marked + " " + fresh
+                else:
+                    expected = "Supplied fresh" if mode == "remove" else marked + " fresh"
+                self.assertEqual("Before\n" + expected + "\nAfter\n",
+                                 "Before\nOld words\nAfter\n".replace(prepared["old_string"], prepared["new_string"]))
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
+
+    def test_disabled_and_remove_modes_translate_chat_parts_and_new_documents(self):
+        marked = self.ok(dict(operation="mark_chat", text="Supplied", role="assistant", scope="all"))
+        supplied = marked + " fresh"
+        for mode in ("prose", "none", "off", "remove"):
+            with self.subTest(mode=mode):
+                expected = "Supplied fresh" if mode == "remove" else supplied
+                self.assertEqual(expected, self.ok(dict(operation="mark_chat", text=supplied, role="assistant", scope=mode)))
+                self.assertEqual([expected, " tail"], self.ok(dict(operation="mark_chat_parts", parts=[supplied, " tail"], role="user", scope=mode)))
+                if mode != "prose":
+                    self.assertEqual(expected, self.ok(dict(operation="mark_document", text=supplied, mode=mode)))
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
+
+    def test_whole_write_and_exact_edit_preserve_words_between_corrections(self):
+        old = "An old opening about passing off longform AI-generated text and an old ending.\n"
+        new = old.replace("old opening", "new opening").replace("old ending", "new ending")
+        marked_new = self.ok(dict(operation="mark_chat", text="new", role="assistant", scope="all"))
+        expected = "An " + marked_new + " opening about passing off longform AI-generated text and an " + marked_new + " ending.\n"
+        self.assertEqual(expected, self.ok(dict(operation="mark_document_edit", old_text=old, new_text=new)))
+        prepared = self.ok(dict(operation="prepare_edit", raw=old, old_string=old, new_string=new, marking_mode="prose"))
+        self.assertEqual(expected, old.replace(prepared["old_string"], prepared["new_string"]))
+
     def test_status_before_and_after_a_database_exists(self):
         before = self.ok({"operation": "status"})
         self.assertTrue(before["core"]["available"], before["core"])

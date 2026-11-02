@@ -16,7 +16,7 @@ import { bridge } from './bridge'
 // explicit voice claims remain an advanced, separate operation.
 
 const PROVIDER = 'claude'
-const VERSION = '0.1.6' // keep in step with .claude-plugin/plugin.json
+const VERSION = '0.1.7' // keep in step with .claude-plugin/plugin.json
 const ADAPTER = `claude-textprov-plugin/${VERSION}`
 const COMMAND = 'textprov'
 const KEEP = 500
