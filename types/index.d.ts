@@ -58,7 +58,7 @@ export type TextprovPending = {
 }
 
 /** A running turn, kept per loop ('main' or the agent id) from turn.start to turn.complete. */
-export type ChatScope = 'prose' | 'all' | 'off'
+export type ChatScope = 'prose' | 'all' | 'none' | 'remove' | 'off'
 
 export type TextprovTurn = {
   turnId: string

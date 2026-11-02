@@ -16,7 +16,7 @@ import { bridge } from './bridge'
 // explicit voice claims remain an advanced, separate operation.
 
 const PROVIDER = 'claude'
-const VERSION = '0.1.5' // keep in step with .claude-plugin/plugin.json
+const VERSION = '0.1.7' // keep in step with .claude-plugin/plugin.json
 const ADAPTER = `claude-textprov-plugin/${VERSION}`
 const COMMAND = 'textprov'
 const KEEP = 500
@@ -48,11 +48,11 @@ const nextChatScope = atom({ plugin: 'textprov', key: 'nextChatScope' } as const
 const messageScopes = atom({ plugin: 'textprov', key: 'messageScopes' } as const, {} as Record<string, ChatScope>)
 
 function scopeValue(value: unknown): ChatScope | undefined {
-  return value === 'prose' || value === 'all' || value === 'off' ? value : undefined
+  return value === 'off' ? 'none' : value === 'prose' || value === 'all' || value === 'none' || value === 'remove' ? value : undefined
 }
 
 async function effectiveScope($: EngineInterface, options: PluginOptions): Promise<ChatScope> {
-  return (await read($, chatScope)) ?? scopeValue(options.chat_marks) ?? 'prose'
+  return scopeValue(await read($, chatScope)) ?? scopeValue(options.chat_marks) ?? 'prose'
 }
 
 async function assistantScope($: EngineInterface, options: PluginOptions, agentId?: string): Promise<ChatScope> {
@@ -248,6 +248,7 @@ async function captureTool(
 
 /** Mark through the shared core without retaining another copy of message text. */
 async function marking($: EngineInterface, options: PluginOptions, operation: string, args: Record<string, string>): Promise<string | undefined> {
+  if (operation === 'mark_chat' && args.scope !== 'all' && args.scope !== 'remove') return args.text
   const ran = await bridge($, options, { operation, ...args })
   if (!ran.ok || typeof ran.result !== 'string') {
     await fail($, 'marking', ran.ok ? 'core returned no marked text' : ran.error)
@@ -257,6 +258,7 @@ async function marking($: EngineInterface, options: PluginOptions, operation: st
 }
 
 async function markingParts($: EngineInterface, options: PluginOptions, parts: string[], role: 'user' | 'assistant', scope: ChatScope): Promise<string[] | undefined> {
+  if (scope !== 'all' && scope !== 'remove') return parts
   const ran = await bridge($, options, { operation: 'mark_chat_parts', parts, role, scope })
   if (!ran.ok || !Array.isArray(ran.result) || ran.result.length !== parts.length || ran.result.some(part => typeof part !== 'string')) {
     await fail($, 'marking', ran.ok ? 'core returned no marked message parts' : ran.error)
@@ -315,7 +317,8 @@ function help(slash: string): string {
     `${slash} list --session [--cross-agent] [--limit N] [--before <id>]`,
     `${indent}page durable session metadata with full observation IDs`,
     `${slash} status               bridge, core, database and plugin state`,
-    `${slash} prose|all|off [--next]    session default, or next main turn only`,
+    `${slash} all|prose|none|remove [--next]    session default, or next main turn only`,
+    'prose marks documents only; all includes chat; none leaves text as supplied.',
     `${slash} copy --plain         copy selected text without TextProv marks`,
     `${slash} inspect <id> [--cross-agent]    metadata, ID joins, claims and text expiry`,
     `${slash} match <src> <dst> [--policy exact-v1|line-endings-v1|common-indent-v1]`,
@@ -515,13 +518,15 @@ async function runCommand($: EngineInterface, options: PluginOptions, args: stri
   switch (verb) {
     case 'prose':
     case 'all':
+    case 'none':
+    case 'remove':
     case 'off': {
-      const scope = verb
+      const scope = scopeValue(verb)!
       const nextOnly = words[1] === '--next'
-      if (words.length !== (nextOnly ? 2 : 1)) return `usage: ${slash} prose|all|off [--next]`
+      if (words.length !== (nextOnly ? 2 : 1)) return `usage: ${slash} all|prose|none|remove [--next]`
       if (nextOnly) await update($, nextChatScope, () => scope)
       else await update($, chatScope, () => scope)
-      return `Chat marks: ${scope} (${nextOnly ? 'next main turn only' : 'new turns and prompts in this session'}). Existing marks are preserved.`
+      return `TextProv mode: ${scope} (${nextOnly ? 'next main turn only' : 'new turns and prompts in this session'}). ${scope === 'prose' ? 'File/document prose is marked; chat and prompts stay unchanged.' : scope === 'none' ? 'Text is left as supplied; no marks are added or removed.' : scope === 'remove' ? 'Existing TextProv marks are explicitly removed from processed output.' : 'Chat and document prose are marked; existing marks are preserved.'}`
     }
     case 'copy': {
       if (words.length !== 2 || words[1] !== '--plain') return `usage: ${slash} copy --plain`
@@ -610,7 +615,7 @@ async function serveCommand($: EngineInterface): Promise<void> {
     await $.command.register({
       name: COMMAND,
       description: 'TextProv: control chat marks, copy plain text, inspect and manage attribution',
-      argumentHint: '[prose|all|off [--next]|copy --plain|list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
+      argumentHint: '[all|prose|none|remove|off [--next]|copy --plain|list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
     })
     await update($, command, () => COMMAND)
   } catch (error) {
@@ -762,7 +767,13 @@ export const register: Register = (on, options) => {
   // Rewrite actual prose tool arguments, before permission and execution.
   // No code/config extension is opted into automatic document marking.
   on('tool.call', { tool: 'Write' }, async ($, e, next) => {
-    if (!PROSE.test(e.file_path)) return captureTool($, options, e, e.content, e.file_path, () => next(e))
+    const mode = await assistantScope($, options, e.agentId)
+    if (mode === 'none' || mode === 'off' || (mode !== 'remove' && !PROSE.test(e.file_path))) return captureTool($, options, e, e.content, e.file_path, () => next(e))
+    if (mode === 'remove') {
+      const content = await marking($, options, 'strip_marks', { text: e.content })
+      if (content === undefined) return { deny: 'TextProv could not remove document marks; inspect /textprov status.' }
+      return captureTool($, options, e, content, e.file_path, () => next({ ...e, content }))
+    }
     let old = ''
     try {
       if (await $.fs.exists(e.file_path)) old = await $.fs.read(e.file_path)
@@ -778,7 +789,9 @@ export const register: Register = (on, options) => {
   on('tool.call', { tool: 'Edit' }, async ($, e, next) => {
     let old_string = e.old_string
     let new_string = e.new_string
-    if (PROSE.test(e.file_path)) {
+    const mode = await assistantScope($, options, e.agentId)
+    if (mode === 'none' || mode === 'off') return captureTool($, options, e, new_string, e.file_path, () => next(e), old_string, { replace_all: e.replace_all ?? false })
+    if (PROSE.test(e.file_path) || mode === 'remove') {
       let raw: string
       try { raw = await $.fs.read(e.file_path) }
       catch (error) {
@@ -786,7 +799,7 @@ export const register: Register = (on, options) => {
         return { deny: 'TextProv could not read the document to preserve its existing marks.' }
       }
       const prepared = await bridge($, options, { operation: 'prepare_edit', raw,
-        old_string, new_string, replace_all: e.replace_all ?? false })
+        old_string, new_string, replace_all: e.replace_all ?? false, marking_mode: mode })
       const result = prepared.ok ? prepared.result as { old_string?: unknown; new_string?: unknown } : undefined
       if (typeof result?.old_string !== 'string' || typeof result.new_string !== 'string') {
         await fail($, 'marking', prepared.ok ? 'core returned no prepared edit' : prepared.error)

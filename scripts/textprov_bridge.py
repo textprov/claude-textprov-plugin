@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 OPERATIONS = ("observe", "match", "claim", "inspect", "transfer", "resolve", "export", "list_observations")
-MIN_CORE = (0, 1, 7)
+MIN_CORE = (0, 3, 1)
 REQUIRED_PARAMETERS = {
     "observe": ("attributes",), "session": ("provider", "session_id"),
     "status": (), "inspect": ("cross_agent",),
@@ -65,13 +65,13 @@ def load_core(checkout):
     version = getattr(textprov, "__version__", None)
     parsed = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:\+[^\s]+)?", version or "")
     if parsed is None or tuple(map(int, parsed.groups())) < MIN_CORE:
-        raise RuntimeError("TextProv core 0.1.7 or newer is required; loaded %s from %s" %
+        raise RuntimeError("TextProv core 0.3.1 or newer is required; loaded %s from %s" %
                            (str(version)[:80], textprov.__file__))
     for method, parameters in REQUIRED_PARAMETERS.items():
         implementation = getattr(getattr(chronicle, "Chronicle", None), method, None)
         if not callable(implementation) or any(
                 name not in inspect.signature(implementation).parameters for name in parameters):
-            raise RuntimeError("TextProv core has an incompatible Chronicle.%s API; core 0.1.7 or newer is required" % method)
+            raise RuntimeError("TextProv core has an incompatible Chronicle.%s API; core 0.3.1 or newer is required" % method)
     return textprov, chronicle
 
 
@@ -95,7 +95,7 @@ def status(args, database):
         "available": True,
         "module": textprov.__file__,
         "version": getattr(textprov, "__version__", None),
-        "minimum_version": "0.1.7",
+        "minimum_version": "0.3.1",
     }
     if database.exists():
         with chronicle.Chronicle(database) as instance:
@@ -130,6 +130,41 @@ def inspection(instance, **request):
     return report
 
 
+def marking_mode(value):
+    """Plugin modes are adapter policy, not keyword arguments to the core."""
+    if value not in ("prose", "all", "none", "off", "remove"):
+        raise ValueError("marking mode must be prose, all, none, off or remove")
+    return "none" if value == "off" else value
+
+
+def mark_output(textprov, operation, request):
+    """Translate document-only plugin modes to the core's text APIs.
+
+    Core chat scope 'prose' classifies chat prose; plugin mode 'prose' leaves
+    chat unchanged and classifies documents instead. Keep that distinction at
+    this boundary, including for older supported cores.
+    """
+    function = getattr(textprov, operation, None)
+    if not callable(function):
+        raise ValueError("matching local core with automatic marking APIs is required")
+    if operation in ("mark_chat", "mark_chat_parts"):
+        mode = marking_mode(request.get("scope", "prose"))
+        request["scope"] = "all" if mode == "all" else "off"
+        result = function(**request)
+        if mode == "remove":
+            return ([textprov.strip_marks(part) for part in result]
+                    if operation == "mark_chat_parts" else textprov.strip_marks(result))
+        return result
+    if operation in ("mark_document", "mark_document_edit"):
+        mode = marking_mode(request.pop("mode", "prose"))
+        if mode in ("none", "remove"):
+            text = request["text" if operation == "mark_document" else "new_text"]
+            if not isinstance(text, str):
+                raise ValueError("text must be a string")
+            return textprov.strip_marks(text) if mode == "remove" else text
+    return function(**request)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, help="project root the chronicle belongs to")
@@ -143,21 +178,31 @@ def main(argv=None):
             raise ValueError("request must be an object")
         operation = request.pop("operation", None)
         if operation == "prepare_edit":
-            load_core(args.textprov_python)
+            mode = marking_mode(request.get("marking_mode", "prose"))
+            if mode == "none":
+                # Disabled mode has the same literal tool-input semantics as
+                # Write: no anchor translation, source carry or core loading.
+                result = {name: request[name] for name in ("old_string", "new_string")}
+                if any(not isinstance(value, str) for value in result.values()):
+                    raise ValueError("edit strings must be strings")
+                print(json.dumps({"result": result}, ensure_ascii=False))
+                return 0
+            textprov, _ = load_core(args.textprov_python)
             from textprov.editing import rewrite_edit
+            # A protected profile suppresses new labels while retaining the
+            # core's mark-insensitive anchors and whole-grapheme safeguards.
+            options = {"profile": lambda text: [True] * len(text)} if mode == "remove" else {}
             prepared = rewrite_edit(request["raw"], request["old_string"], request["new_string"],
                                     replace_all=request.get("replace_all", False), shingles=set(),
-                                    preserve_new_marks=True)
+                                    preserve_new_marks=True, **options)
             if prepared is None:
                 raise ValueError("document edit anchor not found")
-            print(json.dumps({"result": {"old_string": prepared[0], "new_string": prepared[1]}}, ensure_ascii=False))
+            replacement = textprov.strip_marks(prepared[1]) if mode == "remove" else prepared[1]
+            print(json.dumps({"result": {"old_string": prepared[0], "new_string": replacement}}, ensure_ascii=False))
             return 0
         if operation in ("mark_chat", "mark_document", "mark_document_edit", "strip_marks", "mark_chat_parts"):
             textprov, _ = load_core(args.textprov_python)
-            function = getattr(textprov, operation, None)
-            if not callable(function):
-                raise ValueError("matching local core with automatic marking APIs is required")
-            print(json.dumps({"result": function(**request)}, ensure_ascii=False))
+            print(json.dumps({"result": mark_output(textprov, operation, request)}, ensure_ascii=False))
             return 0
         database = database_path(data_directory(args.data_dir), args.root)
         if operation == "status":

@@ -54,7 +54,7 @@ class BridgeTest(unittest.TestCase):
                     completeness="complete")
 
     def test_chat_copy_and_paste_preserves_existing_marks(self):
-        ai = self.ok(dict(operation="mark_chat", text="AI answer 🧪", role="assistant"))
+        ai = self.ok(dict(operation="mark_chat", text="AI answer 🧪", role="assistant", scope="all"))
         self.assertNotEqual(ai, "AI answer 🧪")
         # JSON transport and an ordinary UTF-8 editor preserve the exact scalars.
         clip = Path(self.temp.name) / "clipboard.txt"
@@ -62,13 +62,13 @@ class BridgeTest(unittest.TestCase):
         pasted = clip.read_text(encoding="utf-8")
         self.assertEqual(pasted, ai)
         self.assertEqual(self.ok(dict(operation="mark_chat", text=pasted, role="user")), ai)
-        human = self.ok(dict(operation="mark_chat", text="Human words", role="user"))
+        human = self.ok(dict(operation="mark_chat", text="Human words", role="user", scope="all"))
         self.assertEqual(self.ok(dict(operation="mark_chat", text=human, role="assistant")), human)
 
     def test_chat_scope_and_explicit_plain_copy_do_not_create_a_database(self):
         source = "Prose. `git status`\n\n```sh\ngit status\n```\n"
         marked = self.ok(dict(operation="mark_chat", text=source, role="assistant", scope="prose"))
-        self.assertNotEqual(marked, source)
+        self.assertEqual(marked, source)
         self.assertIn("`git status`", marked)
         self.assertIn("```sh\ngit status\n```", marked)
         self.assertEqual(self.ok(dict(operation="strip_marks", text=marked)), source)
@@ -83,13 +83,12 @@ class BridgeTest(unittest.TestCase):
         marked = self.ok(dict(operation="mark_chat_parts", parts=parts, role="assistant", scope="prose"))
         self.assertEqual(len(marked), len(parts))
         self.assertEqual(marked[1], parts[1])
-        self.assertNotEqual(marked[0], parts[0])
-        self.assertNotEqual(marked[2], parts[2])
+        self.assertEqual(marked, parts)
         for source, target in zip(parts, marked):
             self.assertEqual(self.ok(dict(operation="strip_marks", text=target)), source)
 
     def test_whole_write_and_marker_insensitive_edit_preserve_existing_text(self):
-        human = self.ok(dict(operation="mark_chat", text="Original words", role="user"))
+        human = self.ok(dict(operation="mark_chat", text="Original words", role="user", scope="all"))
         old = human + "\n\nUntouched editor prose.\n"
         new = "Original words\n\nUntouched editor prose.\n\nNew AI sentence.\n"
         marked = self.ok(dict(operation="mark_document_edit", old_text=old, new_text=new))
@@ -103,10 +102,66 @@ class BridgeTest(unittest.TestCase):
         self.assertIn(marked[len(old):], changed)
 
     def test_edit_pasting_marks_onto_existing_unmarked_text_preserves_them(self):
-        marked = self.ok(dict(operation="mark_chat", text="Original words", role="user"))
+        marked = self.ok(dict(operation="mark_chat", text="Original words", role="user", scope="all"))
         result = self.ok(dict(operation="prepare_edit", raw="Original words", old_string="Original words", new_string=marked))
         self.assertEqual(result["old_string"], "Original words")
         self.assertEqual(result["new_string"], marked)
+
+    def test_prepare_edit_uses_supported_core_api_in_every_marking_mode(self):
+        marked = self.ok(dict(operation="mark_chat", text="Supplied", role="assistant", scope="all"))
+        for mode in ("prose", "all", "none", "off", "remove"):
+            with self.subTest(mode=mode):
+                prepared = self.ok(dict(operation="prepare_edit", raw="Before\nOld words\nAfter\n",
+                                        old_string="Old words", new_string=marked + " fresh", marking_mode=mode))
+                if mode in ("prose", "all"):
+                    fresh = self.ok(dict(operation="mark_chat", text="fresh", role="assistant", scope="all"))
+                    expected = marked + " " + fresh
+                else:
+                    expected = "Supplied fresh" if mode == "remove" else marked + " fresh"
+                self.assertEqual("Before\n" + expected + "\nAfter\n",
+                                 "Before\nOld words\nAfter\n".replace(prepared["old_string"], prepared["new_string"]))
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
+
+    def test_disabled_exact_edits_preserve_supplied_bytes_without_loading_core(self):
+        stub = Path(self.temp.name) / "disabled-core"
+        (stub / "textprov").mkdir(parents=True)
+        (stub / "textprov" / "__init__.py").write_text("raise AssertionError('disabled edit loaded core')\n")
+        argv = [sys.executable, str(BRIDGE), "--root", str(self.root), "--data-dir", str(self.data),
+                "--textprov-python", str(stub)]
+        human = "W\U000e0100ords"
+        ai = "W\U000e0101ords"
+        for mode in ("none", "off"):
+            for anchor, supplied in ((human, "Words fresh"), (human, ai + " fresh"),
+                                     ("Words", ai + " fresh"), ("e", "e\u0301")):
+                with self.subTest(mode=mode, anchor=anchor, supplied=supplied):
+                    request = dict(operation="prepare_edit", raw=human, old_string=anchor,
+                                   new_string=supplied, marking_mode=mode)
+                    process = subprocess.run(argv, input=json.dumps(request), text=True, capture_output=True)
+                    self.assertEqual(process.returncode, 0, process.stderr)
+                    self.assertEqual(json.loads(process.stdout)["result"],
+                                     {"old_string": anchor, "new_string": supplied})
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
+
+    def test_disabled_and_remove_modes_translate_chat_parts_and_new_documents(self):
+        marked = self.ok(dict(operation="mark_chat", text="Supplied", role="assistant", scope="all"))
+        supplied = marked + " fresh"
+        for mode in ("prose", "none", "off", "remove"):
+            with self.subTest(mode=mode):
+                expected = "Supplied fresh" if mode == "remove" else supplied
+                self.assertEqual(expected, self.ok(dict(operation="mark_chat", text=supplied, role="assistant", scope=mode)))
+                self.assertEqual([expected, " tail"], self.ok(dict(operation="mark_chat_parts", parts=[supplied, " tail"], role="user", scope=mode)))
+                if mode != "prose":
+                    self.assertEqual(expected, self.ok(dict(operation="mark_document", text=supplied, mode=mode)))
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
+
+    def test_whole_write_and_exact_edit_preserve_words_between_corrections(self):
+        old = "An old opening about passing off longform AI-generated text and an old ending.\n"
+        new = old.replace("old opening", "new opening").replace("old ending", "new ending")
+        marked_new = self.ok(dict(operation="mark_chat", text="new", role="assistant", scope="all"))
+        expected = "An " + marked_new + " opening about passing off longform AI-generated text and an " + marked_new + " ending.\n"
+        self.assertEqual(expected, self.ok(dict(operation="mark_document_edit", old_text=old, new_text=new)))
+        prepared = self.ok(dict(operation="prepare_edit", raw=old, old_string=old, new_string=new, marking_mode="prose"))
+        self.assertEqual(expected, old.replace(prepared["old_string"], prepared["new_string"]))
 
     def test_status_before_and_after_a_database_exists(self):
         before = self.ok({"operation": "status"})
@@ -221,7 +276,7 @@ class BridgeTest(unittest.TestCase):
         stub = Path(self.temp.name) / "public-api"
         package = stub / "textprov"
         package.mkdir(parents=True)
-        (package / "__init__.py").write_text("__version__ = '0.1.7'\n")
+        (package / "__init__.py").write_text("__version__ = '0.3.1'\n")
         (package / "chronicle.py").write_text('''
 class Chronicle:
     def __init__(self, path): pass
@@ -266,8 +321,8 @@ class Chronicle:
         package = stub / "textprov"
         package.mkdir(parents=True)
         (package / "chronicle.py").write_text("class Chronicle: pass\n")
-        for version, message in (("0.1.6", "0.1.7 or newer is required"),
-                                 ("0.1.7", "incompatible Chronicle.observe API")):
+        for version, message in (("0.1.6", "0.3.1 or newer is required"),
+                                 ("0.3.1", "incompatible Chronicle.observe API")):
             (package / "__init__.py").write_text("__version__ = %r\n" % version)
             argv = [sys.executable, "-B", str(BRIDGE), "--root", str(self.root), "--data-dir", str(self.data),
                     "--textprov-python", str(stub)]
@@ -372,6 +427,17 @@ class Chronicle:
         core = json.loads(process.stdout)["result"]["core"]
         self.assertFalse(core["available"])
         self.assertIn("no chronicle module", core["error"])
+
+    def test_none_and_remove_apply_to_supplied_document_output_and_exact_edits(self):
+        marked = self.ok(dict(operation="mark_chat", text="Supplied", role="assistant", scope="all"))
+        for mode, expected in (("none", marked + " fresh"), ("remove", "Supplied fresh")):
+            with self.subTest(mode=mode):
+                result = self.ok(dict(operation="mark_document_edit", old_text="Old", new_text=marked + " fresh", mode=mode))
+                self.assertEqual(expected, result)
+                raw = "Outside\n" + marked + "\n"
+                prepared = self.ok(dict(operation="prepare_edit", raw=raw, old_string=marked if mode == "none" else "Supplied", new_string=marked + " fresh", marking_mode=mode))
+                self.assertEqual("Outside\n" + expected + "\n", raw.replace(prepared["old_string"], prepared["new_string"]))
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
 
 
 if __name__ == "__main__":

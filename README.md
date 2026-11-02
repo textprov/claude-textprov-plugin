@@ -9,11 +9,11 @@ A prototype Claude Code plugin that records attribution observations in the shar
 `/textprov` to inspect them, match passages between them, and record explicit
 attribution claims.
 
-It is a hooks module (a "󠄁m󠄁o󠄁d󠄁"󠄁)󠄁.󠄁 H󠄁u󠄁m󠄁a󠄁n󠄁 c󠄁h󠄁a󠄁t󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁 i󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁;󠄁 a󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁
-p󠄁r󠄁o󠄁s󠄁e󠄁 i󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 A󠄁I󠄁,󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁i󠄁n󠄁g󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 B󠄁y󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁,󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁 f󠄁e󠄁n󠄁c󠄁e󠄁d󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁
-M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 d󠄁e󠄁s󠄁t󠄁i󠄁n󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 a󠄁n󠄁d󠄁 o󠄁t󠄁h󠄁e󠄁r󠄁 p󠄁r󠄁o󠄁t󠄁e󠄁c󠄁t󠄁e󠄁d󠄁 s󠄁y󠄁n󠄁t󠄁a󠄁x󠄁 r󠄁e󠄁c󠄁e󠄁i󠄁v󠄁e󠄁 n󠄁o󠄁 n󠄁e󠄁w󠄁 c󠄁h󠄁a󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 A󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁
-t󠄁r󠄁a󠄁n󠄁s󠄁c󠄁r󠄁i󠄁p󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁 a󠄁n󠄁d󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁-󠄁m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁 d󠄁r󠄁a󠄁w󠄁i󠄁n󠄁g󠄁s󠄁 u󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁a󠄁m󠄁e󠄁 s󠄁h󠄁a󠄁r󠄁e󠄁d󠄁 c󠄁o󠄁r󠄁e󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁y󠄁.󠄁
-M󠄁a󠄁c󠄁h󠄁i󠄁n󠄁e󠄁 n󠄁o󠄁t󠄁i󠄁f󠄁i󠄁c󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 a󠄁n󠄁d󠄁 t󠄁o󠄁o󠄁l󠄁 r󠄁e󠄁s󠄁u󠄁l󠄁t󠄁s󠄁 a󠄁r󠄁e󠄁 n󠄁o󠄁t󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 a󠄁s󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁.󠄁
+It is a hooks module (a "󠄁m󠄁o󠄁d󠄁"󠄁)󠄁.󠄁 T󠄁h󠄁e󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 `prose` m󠄁o󠄁d󠄁e󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 f󠄁i󠄁l󠄁e󠄁/󠄁d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁
+p󠄁r󠄁o󠄁s󠄁e󠄁 o󠄁n󠄁l󠄁y󠄁.󠄁 U󠄁s󠄁e󠄁r󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁s󠄁,󠄁 a󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁 p󠄁r󠄁o󠄁g󠄁r󠄁e󠄁s󠄁s󠄁 u󠄁p󠄁d󠄁a󠄁t󠄁e󠄁s󠄁 a󠄁n󠄁d󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁 c󠄁h󠄁a󠄁t󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁
+s󠄁t󠄁a󠄁y󠄁 a󠄁s󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁.󠄁 `all` a󠄁l󠄁s󠄁o󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 c󠄁h󠄁a󠄁t󠄁 w󠄁i󠄁t󠄁h󠄁 t󠄁h󠄁e󠄁 s󠄁h󠄁a󠄁r󠄁e󠄁d󠄁 s󠄁p󠄁e󠄁a󠄁k󠄁e󠄁r󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁y󠄁:󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁
+f󠄁o󠄁r󠄁 u󠄁s󠄁e󠄁r󠄁 t󠄁e󠄁x󠄁t󠄁 a󠄁n󠄁d󠄁 A󠄁I󠄁 f󠄁o󠄁r󠄁 a󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁.󠄁 M󠄁a󠄁c󠄁h󠄁i󠄁n󠄁e󠄁 n󠄁o󠄁t󠄁i󠄁f󠄁i󠄁c󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 a󠄁n󠄁d󠄁 t󠄁o󠄁o󠄁l󠄁 r󠄁e󠄁s󠄁u󠄁l󠄁t󠄁s󠄁
+a󠄁r󠄁e󠄁 n󠄁e󠄁v󠄁e󠄁r󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 a󠄁s󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁.󠄁
 
 F󠄁o󠄁r󠄁 `Write` a󠄁n󠄁d󠄁 `Edit` o󠄁n󠄁 `.md`,󠄁 `.markdown`,󠄁 `.txt`,󠄁 `.rst`,󠄁 `.adoc` a󠄁n󠄁d󠄁 `.mdx`,󠄁
 n󠄁e󠄁w󠄁 o󠄁r󠄁 r󠄁e󠄁p󠄁l󠄁a󠄁c󠄁e󠄁d󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁 i󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 A󠄁I󠄁 w󠄁h󠄁i󠄁l󠄁e󠄁 u󠄁n󠄁c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁d󠄁 t󠄁e󠄁x󠄁t󠄁 k󠄁e󠄁e󠄁p󠄁s󠄁 i󠄁t󠄁s󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁
@@ -24,52 +24,54 @@ C󠄁o󠄁d󠄁e󠄁/󠄁c󠄁o󠄁n󠄁f󠄁i󠄁g󠄁 f󠄁i󠄁l󠄁e󠄁s�
 a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 m󠄁u󠄁t󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 p󠄁a󠄁t󠄁h󠄁.󠄁 O󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 e󠄁d󠄁i󠄁t󠄁o󠄁r󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁 s󠄁t󠄁a󠄁y󠄁 u󠄁n󠄁m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 u󠄁n󠄁l󠄁e󠄁s󠄁s󠄁 t󠄁h󠄁e󠄁 e󠄁d󠄁i󠄁t󠄁o󠄁r󠄁
 r󠄁e󠄁t󠄁a󠄁i󠄁n󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 o󠄁n󠄁 t󠄁h󠄁o󠄁s󠄁e󠄁 c󠄁h󠄁a󠄁r󠄁a󠄁c󠄁t󠄁e󠄁r󠄁s󠄁;󠄁 T󠄁e󠄁x󠄁t󠄁P󠄁r󠄁o󠄁v󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 r󠄁u󠄁n󠄁 a󠄁n󠄁 e󠄁d󠄁i󠄁t󠄁o󠄁r󠄁 w󠄁a󠄁t󠄁c󠄁h󠄁e󠄁r󠄁.󠄁
 
-V󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁:󠄁 0󠄁.󠄁1󠄁.󠄁5󠄁 (󠄁l󠄁o󠄁c󠄁a󠄁l󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁)󠄁.󠄁 U󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 m󠄁a󠄁t󠄁c󠄁h󠄁i󠄁n󠄁g󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 c󠄁o󠄁r󠄁e󠄁 w󠄁i󠄁t󠄁h󠄁 t󠄁h󠄁e󠄁
+V󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁:󠄁 0󠄁.󠄁1󠄁.󠄁7󠄁 (󠄁l󠄁o󠄁c󠄁a󠄁l󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁)󠄁.󠄁 U󠄁s󠄁e󠄁 T󠄁e󠄁x󠄁t󠄁P󠄁r󠄁o󠄁v󠄁 c󠄁o󠄁r󠄁e󠄁 0󠄁.󠄁3󠄁.󠄁1󠄁 o󠄁r󠄁 n󠄁e󠄁w󠄁e󠄁r󠄁 w󠄁i󠄁t󠄁h󠄁 t󠄁h󠄁e󠄁
 `mark_chat`,󠄁 `mark_document_edit` a󠄁n󠄁d󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁r󠄁-󠄁a󠄁w󠄁a󠄁r󠄁e󠄁 e󠄁d󠄁i󠄁t󠄁i󠄁n󠄁g󠄁 A󠄁P󠄁I󠄁s󠄁.󠄁 M󠄁a󠄁n󠄁u󠄁a󠄁l󠄁 c󠄁l󠄁a󠄁i󠄁m󠄁s󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁
 a󠄁n󠄁 a󠄁d󠄁v󠄁a󠄁n󠄁c󠄁e󠄁d󠄁 C󠄁h󠄁r󠄁o󠄁n󠄁i󠄁c󠄁l󠄁e󠄁 f󠄁e󠄁a󠄁t󠄁u󠄁r󠄁e󠄁 a󠄁n󠄁d󠄁 a󠄁r󠄁e󠄁 n󠄁o󠄁t󠄁 r󠄁e󠄁q󠄁u󠄁i󠄁r󠄁e󠄁d󠄁 f󠄁o󠄁r󠄁 a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁c󠄁a󠄁t󠄁i󠄁o󠄁n󠄁.󠄁
 T󠄁h󠄁e󠄁 V󠄁S󠄁/󠄁c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁c󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 e󠄁n󠄁c󠄁o󠄁d󠄁i󠄁n󠄁g󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁s󠄁 e󠄁x󠄁p󠄁e󠄁r󠄁i󠄁m󠄁e󠄁n󠄁t󠄁a󠄁l󠄁.󠄁 C󠄁o󠄁p󠄁y󠄁/󠄁p󠄁a󠄁s󠄁t󠄁e󠄁 r󠄁e󠄁t󠄁a󠄁i󠄁n󠄁s󠄁 a󠄁t󠄁t󠄁r󠄁i󠄁b󠄁u󠄁t󠄁i󠄁o󠄁n󠄁
 w󠄁h󠄁e󠄁n󠄁 t󠄁h󠄁e󠄁 d󠄁e󠄁s󠄁t󠄁i󠄁n󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁s󠄁 U󠄁n󠄁i󠄁c󠄁o󠄁d󠄁e󠄁 v󠄁a󠄁r󠄁i󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁o󠄁r󠄁s󠄁;󠄁 s󠄁a󠄁n󠄁i󠄁t󠄁i󠄁z󠄁i󠄁n󠄁g󠄁 d󠄁e󠄁s󠄁t󠄁i󠄁n󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁
-c󠄁a󠄁n󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁e󠄁 t󠄁h󠄁e󠄁m󠄁.󠄁 A󠄁 n󠄁a󠄁t󠄁i󠄁v󠄁e󠄁 C󠄁l󠄁a󠄁u󠄁d󠄁e󠄁 C󠄁L󠄁I󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁 v󠄁e󠄁r󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁 a󠄁n󠄁d󠄁 A󠄁I󠄁 r󠄁e󠄁s󠄁p󠄁o󠄁n󠄁s󠄁e󠄁
+c󠄁a󠄁n󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁e󠄁 t󠄁h󠄁e󠄁m󠄁.󠄁 A󠄁n󠄁 e󠄁a󠄁r󠄁l󠄁i󠄁e󠄁r󠄁 a󠄁l󠄁l󠄁-󠄁m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 C󠄁l󠄁a󠄁u󠄁d󠄁e󠄁 C󠄁L󠄁I󠄁 t󠄁r󠄁i󠄁a󠄁l󠄁 v󠄁e󠄁r󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁 a󠄁n󠄁d󠄁 A󠄁I󠄁 r󠄁e󠄁s󠄁p󠄁o󠄁n󠄁s󠄁e󠄁
 m󠄁a󠄁r󠄁k󠄁s󠄁 i󠄁n󠄁 i󠄁t󠄁s󠄁 t󠄁r󠄁a󠄁n󠄁s󠄁c󠄁r󠄁i󠄁p󠄁t󠄁 a󠄁n󠄁d󠄁 J󠄁S󠄁O󠄁N󠄁 r󠄁e󠄁s󠄁u󠄁l󠄁t󠄁;󠄁 m󠄁a󠄁c󠄁O󠄁S󠄁 p󠄁a󠄁s󠄁t󠄁e󠄁b󠄁o󠄁a󠄁r󠄁d󠄁 a󠄁n󠄁d󠄁 U󠄁T󠄁F󠄁-󠄁8󠄁 f󠄁i󠄁l󠄁e󠄁 r󠄁o󠄁u󠄁n󠄁d󠄁 t󠄁r󠄁i󠄁p󠄁s󠄁
 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁d󠄁 t󠄁h󠄁e󠄁 r󠄁e󠄁s󠄁p󠄁o󠄁n󠄁s󠄁e󠄁 s󠄁c󠄁a󠄁l󠄁a󠄁r󠄁s󠄁 e󠄁x󠄁a󠄁c󠄁t󠄁l󠄁y󠄁.󠄁 I󠄁n󠄁t󠄁e󠄁r󠄁a󠄁c󠄁t󠄁i󠄁v󠄁e󠄁 t󠄁e󠄁r󠄁m󠄁i󠄁n󠄁a󠄁l󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁i󠄁o󠄁n󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁s󠄁 u󠄁n󠄁t󠄁e󠄁s󠄁t󠄁e󠄁d󠄁.󠄁
 
 ## Control chat marks
 
-T󠄁h󠄁e󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 `prose` s󠄁c󠄁o󠄁p󠄁e󠄁 a󠄁d󠄁d󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 t󠄁o󠄁 s󠄁u󠄁r󠄁r󠄁o󠄁u󠄁n󠄁d󠄁i󠄁n󠄁g󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁 a󠄁n󠄁d󠄁 l󠄁e󠄁a󠄁v󠄁e󠄁s󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁
-f󠄁e󠄁n󠄁c󠄁e󠄁d󠄁 c󠄁o󠄁d󠄁e󠄁,󠄁 M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 l󠄁i󠄁n󠄁k󠄁 d󠄁e󠄁s󠄁t󠄁i󠄁n󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 a󠄁n󠄁d󠄁 o󠄁t󠄁h󠄁e󠄁r󠄁 p󠄁r󠄁o󠄁t󠄁e󠄁c󠄁t󠄁e󠄁d󠄁 s󠄁y󠄁n󠄁t󠄁a󠄁x󠄁 u󠄁n󠄁c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁d󠄁.󠄁 P󠄁u󠄁t󠄁
-c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁s󠄁 i󠄁n󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 c󠄁o󠄁d󠄁e󠄁 o󠄁r󠄁 f󠄁e󠄁n󠄁c󠄁e󠄁d󠄁 c󠄁o󠄁d󠄁e󠄁 b󠄁l󠄁o󠄁c󠄁k󠄁s󠄁:󠄁 o󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁s󠄁 s󠄁t󠄁i󠄁l󠄁l󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁,󠄁 s󠄁o󠄁 t󠄁h󠄁e󠄁
-p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 p󠄁r󠄁o󠄁m󠄁i󠄁s󠄁e󠄁 t󠄁h󠄁a󠄁t󠄁 e󠄁v󠄁e󠄁r󠄁y󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁-󠄁l󠄁i󠄁k󠄁e󠄁 s󠄁e󠄁n󠄁t󠄁e󠄁n󠄁c󠄁e󠄁 w󠄁i󠄁l󠄁l󠄁 c󠄁o󠄁p󠄁y󠄁 c󠄁l󠄁e󠄁a󠄁n󠄁l󠄁y󠄁.󠄁
-`all` a󠄁d󠄁d󠄁s󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 t󠄁h󠄁r󠄁o󠄁u󠄁g󠄁h󠄁o󠄁u󠄁t󠄁 c󠄁h󠄁a󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁.󠄁 `off` s󠄁t󠄁o󠄁p󠄁s󠄁 a󠄁d󠄁d󠄁i󠄁n󠄁g󠄁 c󠄁h󠄁a󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 B󠄁o󠄁t󠄁h󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁
-m󠄁a󠄁r󠄁k󠄁s󠄁 a󠄁l󠄁r󠄁e󠄁a󠄁d󠄁y󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁n󠄁t󠄁;󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁i󠄁n󠄁g󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 c󠄁l󠄁e󠄁a󠄁n󠄁 p󠄁r󠄁e󠄁v󠄁i󠄁o󠄁u󠄁s󠄁l󠄁y󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁s󠄁.󠄁
-U󠄁n󠄁m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁s󠄁 n󠄁o󠄁t󠄁 a󠄁 d󠄁e󠄁c󠄁l󠄁a󠄁r󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 o󠄁f󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 a󠄁u󠄁t󠄁h󠄁o󠄁r󠄁s󠄁h󠄁i󠄁p󠄁.󠄁
+T󠄁h󠄁e󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 `prose` m󠄁o󠄁d󠄁e󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 f󠄁i󠄁l󠄁e󠄁/󠄁d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 p󠄁r󠄁o󠄁s󠄁e󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 e󠄁n󠄁c󠄁o󠄁d󠄁i󠄁n󠄁g󠄁 c󠄁h󠄁a󠄁t󠄁 o󠄁r󠄁
+p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁s󠄁.󠄁 `all` a󠄁l󠄁s󠄁o󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 c󠄁h󠄁a󠄁t󠄁,󠄁 i󠄁n󠄁c󠄁l󠄁u󠄁d󠄁i󠄁n󠄁g󠄁 c󠄁o󠄁d󠄁e󠄁 a󠄁n󠄁d󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁s󠄁.󠄁 `none` l󠄁e󠄁a󠄁v󠄁e󠄁s󠄁 t󠄁e󠄁x󠄁t󠄁 a󠄁s󠄁
+s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 a󠄁d󠄁d󠄁i󠄁n󠄁g󠄁 o󠄁r󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁i󠄁n󠄁g󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 `remove` e󠄁x󠄁p󠄁l󠄁i󠄁c󠄁i󠄁t󠄁l󠄁y󠄁 s󠄁t󠄁r󠄁i󠄁p󠄁s󠄁 r󠄁e󠄁g󠄁i󠄁s󠄁t󠄁r󠄁y󠄁
+m󠄁a󠄁r󠄁k󠄁s󠄁 f󠄁r󠄁o󠄁m󠄁 p󠄁r󠄁o󠄁c󠄁e󠄁s󠄁s󠄁e󠄁d󠄁 c󠄁h󠄁a󠄁t󠄁 a󠄁n󠄁d󠄁 f󠄁i󠄁l󠄁e󠄁 o󠄁u󠄁t󠄁p󠄁u󠄁t󠄁,󠄁 i󠄁n󠄁c󠄁l󠄁u󠄁d󠄁i󠄁n󠄁g󠄁 c󠄁o󠄁d󠄁e󠄁-󠄁f󠄁i󠄁l󠄁e󠄁 o󠄁u󠄁t󠄁p󠄁u󠄁t󠄁.󠄁 `off`
+r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁s󠄁 a󠄁n󠄁 a󠄁l󠄁i󠄁a󠄁s󠄁 f󠄁o󠄁r󠄁 `none`.󠄁 N󠄁o󠄁 m󠄁o󠄁d󠄁e󠄁 s󠄁w󠄁e󠄁e󠄁p󠄁s󠄁 p󠄁r󠄁o󠄁j󠄁e󠄁c󠄁t󠄁 f󠄁i󠄁l󠄁e󠄁s󠄁 o󠄁r󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁e󠄁s󠄁 h󠄁i󠄁s󠄁t󠄁o󠄁r󠄁y󠄁.󠄁
 
 ```text
-/textprov prose
 /textprov all
-/textprov off
+/textprov prose
+/textprov none
+/textprov remove
 /textprov all --next
 /textprov status
 ```
 
-T󠄁h󠄁e󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁 i󠄁s󠄁 `off`,󠄁 n󠄁o󠄁t󠄁 `none`.󠄁 I󠄁t󠄁 s󠄁t󠄁o󠄁p󠄁s󠄁 a󠄁d󠄁d󠄁i󠄁n󠄁g󠄁 n󠄁e󠄁w󠄁 c󠄁h󠄁a󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁;󠄁 i󠄁t󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁
-r󠄁e󠄁m󠄁o󠄁v󠄁e󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 o󠄁r󠄁 s󠄁t󠄁o󠄁p󠄁 d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 a󠄁n󠄁d󠄁 C󠄁h󠄁r󠄁o󠄁n󠄁i󠄁c󠄁l󠄁e󠄁 c󠄁a󠄁p󠄁t󠄁u󠄁r󠄁e󠄁.󠄁
-
-A󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁 a󠄁p󠄁p󠄁l󠄁i󠄁e󠄁s󠄁 t󠄁o󠄁 n󠄁e󠄁w󠄁 h󠄁u󠄁m󠄁a󠄁n󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁s󠄁 a󠄁n󠄁d󠄁 n󠄁e󠄁w󠄁l󠄁y󠄁 s󠄁t󠄁a󠄁r󠄁t󠄁e󠄁d󠄁 t󠄁u󠄁r󠄁n󠄁s󠄁.󠄁 A󠄁 r󠄁u󠄁n󠄁n󠄁i󠄁n󠄁g󠄁
-t󠄁u󠄁r󠄁n󠄁 a󠄁n󠄁d󠄁 i󠄁t󠄁s󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁 k󠄁e󠄁e󠄁p󠄁 t󠄁h󠄁e󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁e󠄁d󠄁 w󠄁h󠄁e󠄁n󠄁 t󠄁h󠄁e󠄁 t󠄁u󠄁r󠄁n󠄁 s󠄁t󠄁a󠄁r󠄁t󠄁e󠄁d󠄁.󠄁
+S󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁 a󠄁p󠄁p󠄁l󠄁y󠄁 t󠄁o󠄁 n󠄁e󠄁w󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁s󠄁 a󠄁n󠄁d󠄁 n󠄁e󠄁w󠄁l󠄁y󠄁 s󠄁t󠄁a󠄁r󠄁t󠄁e󠄁d󠄁 t󠄁u󠄁r󠄁n󠄁s󠄁.󠄁 A󠄁 r󠄁u󠄁n󠄁n󠄁i󠄁n󠄁g󠄁 t󠄁u󠄁r󠄁n󠄁,󠄁
+i󠄁t󠄁s󠄁 f󠄁i󠄁l󠄁e󠄁 o󠄁p󠄁e󠄁r󠄁a󠄁t󠄁i󠄁o󠄁n󠄁s󠄁,󠄁 a󠄁n󠄁d󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁 k󠄁e󠄁e󠄁p󠄁 t󠄁h󠄁e󠄁 m󠄁o󠄁d󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁e󠄁d󠄁 a󠄁t󠄁 t󠄁u󠄁r󠄁n󠄁 s󠄁t󠄁a󠄁r󠄁t󠄁.󠄁
 `--next` c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁 e󠄁x󠄁a󠄁c󠄁t󠄁l󠄁y󠄁 t󠄁h󠄁e󠄁 n󠄁e󠄁x󠄁t󠄁 m󠄁a󠄁i󠄁n󠄁 t󠄁u󠄁r󠄁n󠄁,󠄁 t󠄁h󠄁e󠄁n󠄁 r󠄁e󠄁t󠄁u󠄁r󠄁n󠄁s󠄁 t󠄁o󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁;󠄁
 c󠄁h󠄁i󠄁l󠄁d󠄁 t󠄁u󠄁r󠄁n󠄁s󠄁 u󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 a󠄁n󠄁d󠄁 d󠄁o󠄁 n󠄁o󠄁t󠄁 c󠄁o󠄁n󠄁s󠄁u󠄁m󠄁e󠄁 t󠄁h󠄁a󠄁t󠄁 o󠄁v󠄁e󠄁r󠄁r󠄁i󠄁d󠄁e󠄁.󠄁 A󠄁n󠄁 a󠄁b󠄁o󠄁r󠄁t󠄁e󠄁d󠄁
-o󠄁r󠄁 e󠄁m󠄁p󠄁t󠄁y󠄁 m󠄁a󠄁i󠄁n󠄁 t󠄁u󠄁r󠄁n󠄁 c󠄁o󠄁n󠄁s󠄁u󠄁m󠄁e󠄁s󠄁 i󠄁t󠄁 t󠄁o󠄁o󠄁.󠄁 I󠄁t󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁 r󠄁e󠄁s󠄁p󠄁o󠄁n󠄁s󠄁e󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 o󠄁n󠄁l󠄁y󠄁,󠄁 s󠄁o󠄁 t󠄁h󠄁e󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁
-i󠄁t󠄁s󠄁e󠄁l󠄁f󠄁 u󠄁s󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁.󠄁 S󠄁t󠄁a󠄁t󠄁u󠄁s󠄁 s󠄁h󠄁o󠄁w󠄁s󠄁
-t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁,󠄁 p󠄁e󠄁n󠄁d󠄁i󠄁n󠄁g󠄁 o󠄁v󠄁e󠄁r󠄁r󠄁i󠄁d󠄁e󠄁 a󠄁n󠄁d󠄁 a󠄁c󠄁t󠄁i󠄁v󠄁e󠄁 t󠄁u󠄁r󠄁n󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁s󠄁.󠄁
+o󠄁r󠄁 e󠄁m󠄁p󠄁t󠄁y󠄁 m󠄁a󠄁i󠄁n󠄁 t󠄁u󠄁r󠄁n󠄁 c󠄁o󠄁n󠄁s󠄁u󠄁m󠄁e󠄁s󠄁 i󠄁t󠄁 t󠄁o󠄁o󠄁.󠄁 T󠄁h󠄁e󠄁 p󠄁r󠄁o󠄁m󠄁p󠄁t󠄁 i󠄁t󠄁s󠄁e󠄁l󠄁f󠄁 u󠄁s󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁.󠄁
+S󠄁t󠄁a󠄁t󠄁u󠄁s󠄁 s󠄁h󠄁o󠄁w󠄁s󠄁 t󠄁h󠄁e󠄁 s󠄁e󠄁s󠄁s󠄁i󠄁o󠄁n󠄁 m󠄁o󠄁d󠄁e󠄁,󠄁 p󠄁e󠄁n󠄁d󠄁i󠄁n󠄁g󠄁 o󠄁v󠄁e󠄁r󠄁r󠄁i󠄁d󠄁e󠄁,󠄁 a󠄁n󠄁d󠄁 a󠄁c󠄁t󠄁i󠄁v󠄁e󠄁 t󠄁u󠄁r󠄁n󠄁 m󠄁o󠄁d󠄁e󠄁s󠄁.󠄁
 
-A󠄁l󠄁l󠄁 a󠄁s󠄁s󠄁i󠄁s󠄁t󠄁a󠄁n󠄁t󠄁 t󠄁e󠄁x󠄁t󠄁 b󠄁l󠄁o󠄁c󠄁k󠄁s󠄁 s󠄁h󠄁a󠄁r󠄁e󠄁 o󠄁n󠄁e󠄁 M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁x󠄁t󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁 t󠄁h󠄁e󠄁y󠄁 a󠄁r󠄁e󠄁 s󠄁t󠄁o󠄁r󠄁e󠄁d󠄁,󠄁 s󠄁o󠄁 a󠄁
-f󠄁e󠄁n󠄁c󠄁e󠄁 o󠄁r󠄁 i󠄁n󠄁l󠄁i󠄁n󠄁e󠄁 l󠄁i󠄁t󠄁e󠄁r󠄁a󠄁l󠄁 s󠄁p󠄁a󠄁n󠄁n󠄁i󠄁n󠄁g󠄁 b󠄁l󠄁o󠄁c󠄁k󠄁s󠄁 s󠄁t󠄁a󠄁y󠄁s󠄁 p󠄁r󠄁o󠄁t󠄁e󠄁c󠄁t󠄁e󠄁d󠄁.󠄁 H󠄁o󠄁s󠄁t󠄁 p󠄁a󠄁s󠄁t󠄁e󠄁 t󠄁a󠄁g󠄁s󠄁 s󠄁i󠄁m󠄁i󠄁l󠄁a󠄁r󠄁l󠄁y󠄁
-s󠄁t󠄁a󠄁y󠄁 o󠄁u󠄁t󠄁s󠄁i󠄁d󠄁e󠄁 t󠄁h󠄁e󠄁 M󠄁a󠄁r󠄁k󠄁d󠄁o󠄁w󠄁n󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁x󠄁t󠄁 w󠄁h󠄁i󠄁l󠄁e󠄁 t󠄁h󠄁e󠄁i󠄁r󠄁 u󠄁s󠄁e󠄁r󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁s󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁i󠄁e󠄁d󠄁 t󠄁o󠄁g󠄁e󠄁t󠄁h󠄁e󠄁r󠄁.󠄁
-S󠄁t󠄁o󠄁r󠄁e󠄁d󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁n󠄁t󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁 d󠄁i󠄁s󠄁p󠄁l󠄁a󠄁y󠄁e󠄁d󠄁 b󠄁y󠄁t󠄁e󠄁s󠄁;󠄁 t󠄁h󠄁e󠄁 r󠄁e󠄁n󠄁d󠄁e󠄁r󠄁e󠄁r󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁y󠄁 a󠄁
-f󠄁r󠄁a󠄁g󠄁m󠄁e󠄁n󠄁t󠄁 a󠄁g󠄁a󠄁i󠄁n󠄁.󠄁 T󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁 m󠄁a󠄁y󠄁 s󠄁h󠄁o󠄁w󠄁 s󠄁t󠄁r󠄁e󠄁a󠄁m󠄁i󠄁n󠄁g󠄁 t󠄁e󠄁x󠄁t󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁t󠄁o󠄁r󠄁a󠄁g󠄁e󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁e󠄁.󠄁
-H󠄁i󠄁s󠄁t󠄁o󠄁r󠄁i󠄁c󠄁a󠄁l󠄁 r󠄁o󠄁w󠄁s󠄁 k󠄁e󠄁e󠄁p󠄁 t󠄁h󠄁e󠄁i󠄁r󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁 b󠄁y󠄁t󠄁e󠄁s󠄁.󠄁 R󠄁o󠄁w󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁i󠄁e󠄁s󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁 p󠄁i󠄁n󠄁n󠄁e󠄁d󠄁 f󠄁o󠄁r󠄁 t󠄁h󠄁i󠄁s󠄁
-r󠄁u󠄁n󠄁n󠄁i󠄁n󠄁g󠄁 p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 p󠄁r󠄁o󠄁c󠄁e󠄁s󠄁s󠄁,󠄁 i󠄁n󠄁c󠄁l󠄁u󠄁d󠄁i󠄁n󠄁g󠄁 h󠄁o󠄁t󠄁 r󠄁e󠄁l󠄁o󠄁a󠄁d󠄁s󠄁;󠄁 a󠄁 r󠄁e󠄁s󠄁u󠄁m󠄁e󠄁d󠄁 p󠄁r󠄁o󠄁c󠄁e󠄁s󠄁s󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁
-r󠄁e󠄁c󠄁o󠄁n󠄁s󠄁t󠄁r󠄁u󠄁c󠄁t󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁y󠄁 f󠄁o󠄁r󠄁 o󠄁l󠄁d󠄁 r󠄁o󠄁w󠄁s󠄁 o󠄁r󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁e󠄁 t󠄁h󠄁e󠄁m󠄁.󠄁
+I󠄁n󠄁 a󠄁l󠄁l󠄁 m󠄁o󠄁d󠄁e󠄁,󠄁 c󠄁o󠄁m󠄁p󠄁l󠄁e󠄁t󠄁e󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁 p󠄁a󠄁r󠄁t󠄁s󠄁 s󠄁h󠄁a󠄁r󠄁e󠄁 g󠄁r󠄁a󠄁p󠄁h󠄁e󠄁m󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁x󠄁t󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁 s󠄁t󠄁o󠄁r󠄁a󠄁g󠄁e󠄁.󠄁 I󠄁n󠄁
+r󠄁e󠄁m󠄁o󠄁v󠄁e󠄁 m󠄁o󠄁d󠄁e󠄁,󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁 a󠄁r󠄁e󠄁 s󠄁t󠄁r󠄁i󠄁p󠄁p󠄁e󠄁d󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 m󠄁o󠄁v󠄁i󠄁n󠄁g󠄁 t󠄁e󠄁x󠄁t󠄁 b󠄁e󠄁t󠄁w󠄁e󠄁e󠄁n󠄁 b󠄁l󠄁o󠄁c󠄁k󠄁s󠄁.󠄁
+H󠄁o󠄁s󠄁t󠄁 p󠄁a󠄁s󠄁t󠄁e󠄁 t󠄁a󠄁g󠄁s󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁 f󠄁r󠄁a󠄁m󠄁i󠄁n󠄁g󠄁.󠄁 S󠄁t󠄁o󠄁r󠄁e󠄁d󠄁 b󠄁y󠄁t󠄁e󠄁s󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁y󠄁 t󠄁h󠄁e󠄁 d󠄁i󠄁s󠄁p󠄁l󠄁a󠄁y󠄁;󠄁 t󠄁h󠄁e󠄁 r󠄁e󠄁n󠄁d󠄁e󠄁r󠄁e󠄁r󠄁
+d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 r󠄁e󠄁c󠄁l󠄁a󠄁s󠄁s󠄁i󠄁f󠄁y󠄁 f󠄁r󠄁a󠄁g󠄁m󠄁e󠄁n󠄁t󠄁s󠄁 o󠄁r󠄁 c󠄁l󠄁e󠄁a󠄁n󠄁 h󠄁i󠄁s󠄁t󠄁o󠄁r󠄁i󠄁c󠄁a󠄁l󠄁 r󠄁o󠄁w󠄁s󠄁.󠄁 T󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁 m󠄁a󠄁y󠄁 d󠄁i󠄁s󠄁p󠄁l󠄁a󠄁y󠄁
+s󠄁t󠄁r󠄁e󠄁a󠄁m󠄁i󠄁n󠄁g󠄁 t󠄁e󠄁x󠄁t󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁t󠄁o󠄁r󠄁a󠄁g󠄁e󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁e󠄁,󠄁 s󠄁o󠄁 l󠄁i󠄁v󠄁e󠄁 s󠄁t󠄁r󠄁e󠄁a󠄁m󠄁i󠄁n󠄁g󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁a󠄁l󠄁 i󠄁s󠄁 n󠄁o󠄁t󠄁
+g󠄁u󠄁a󠄁r󠄁a󠄁n󠄁t󠄁e󠄁e󠄁d󠄁.󠄁 R󠄁e󠄁s󠄁t󠄁a󠄁r󠄁t󠄁i󠄁n󠄁g󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 r󠄁e󠄁c󠄁o󠄁n󠄁s󠄁t󠄁r󠄁u󠄁c󠄁t󠄁 p󠄁o󠄁l󠄁i󠄁c󠄁i󠄁e󠄁s󠄁 o󠄁r󠄁 r󠄁e󠄁w󠄁r󠄁i󠄁t󠄁e󠄁 o󠄁l󠄁d󠄁e󠄁r󠄁 m󠄁e󠄁s󠄁s󠄁a󠄁g󠄁e󠄁s󠄁.󠄁
+
+F󠄁o󠄁r󠄁 W󠄁r󠄁i󠄁t󠄁e󠄁,󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁e󠄁 c󠄁l󠄁e󠄁a󠄁n󠄁s󠄁 t󠄁h󠄁e󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁 f󠄁i󠄁l󠄁e󠄁 o󠄁u󠄁t󠄁p󠄁u󠄁t󠄁.󠄁 F󠄁o󠄁r󠄁 E󠄁d󠄁i󠄁t󠄁,󠄁 i󠄁t󠄁 c󠄁l󠄁e󠄁a󠄁n󠄁s󠄁 o󠄁n󠄁l󠄁y󠄁 t󠄁h󠄁e󠄁
+r󠄁e󠄁p󠄁l󠄁a󠄁c󠄁e󠄁m󠄁e󠄁n󠄁t󠄁 a󠄁n󠄁d󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁s󠄁 t󠄁e󠄁x󠄁t󠄁 o󠄁u󠄁t󠄁s󠄁i󠄁d󠄁e󠄁 t󠄁h󠄁e󠄁 e󠄁d󠄁i󠄁t󠄁e󠄁d󠄁 r󠄁a󠄁n󠄁g󠄁e󠄁;󠄁 a󠄁n󠄁c󠄁h󠄁o󠄁r󠄁s󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁
+m󠄁a󠄁r󠄁k󠄁e󠄁r󠄁-󠄁a󠄁w󠄁a󠄁r󠄁e󠄁.󠄁 N󠄁o󠄁n󠄁e󠄁 l󠄁e󠄁a󠄁v󠄁e󠄁s󠄁 t󠄁o󠄁o󠄁l󠄁 o󠄁u󠄁t󠄁p󠄁u󠄁t󠄁 a󠄁s󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁.󠄁 C󠄁a󠄁p󠄁t󠄁u󠄁r󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁i󠄁n󠄁u󠄁e󠄁s󠄁 i󠄁n󠄁 a󠄁l󠄁l󠄁 m󠄁o󠄁d󠄁e󠄁s󠄁.󠄁
+
+`none` a󠄁n󠄁d󠄁 i󠄁t󠄁s󠄁 `off` a󠄁l󠄁i󠄁a󠄁s󠄁 f󠄁o󠄁r󠄁w󠄁a󠄁r󠄁d󠄁 W󠄁r󠄁i󠄁t󠄁e󠄁 a󠄁n󠄁d󠄁 E󠄁d󠄁i󠄁t󠄁 a󠄁r󠄁g󠄁u󠄁m󠄁e󠄁n󠄁t󠄁s󠄁 u󠄁n󠄁c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁d󠄁.󠄁 E󠄁d󠄁i󠄁t󠄁 u󠄁s󠄁e󠄁s󠄁
+t󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁'󠄁s󠄁 o󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 l󠄁i󠄁t󠄁e󠄁r󠄁a󠄁l󠄁 m󠄁a󠄁t󠄁c󠄁h󠄁i󠄁n󠄁g󠄁,󠄁 s󠄁o󠄁 `old_string` m󠄁u󠄁s󠄁t󠄁 i󠄁n󠄁c󠄁l󠄁u󠄁d󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁o󠄁u󠄁r󠄁c󠄁e󠄁
+m󠄁a󠄁r󠄁k󠄁s󠄁 w󠄁h󠄁e󠄁n󠄁 t󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁 r󠄁e󠄁q󠄁u󠄁i󠄁r󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁m󠄁.󠄁 T󠄁h󠄁i󠄁s󠄁 k󠄁e󠄁e󠄁p󠄁s󠄁 t󠄁h󠄁e󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁 a󠄁r󠄁g󠄁u󠄁m󠄁e󠄁n󠄁t󠄁s󠄁 f󠄁r󠄁e󠄁e󠄁 o󠄁f󠄁
+a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 m󠄁a󠄁r󠄁k󠄁 a󠄁d󠄁d󠄁i󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 o󠄁r󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁a󠄁l󠄁s󠄁.󠄁
 
 T󠄁o󠄁 c󠄁o󠄁p󠄁y󠄁 a󠄁n󠄁 a󠄁l󠄁r󠄁e󠄁a󠄁d󠄁y󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 i󠄁t󠄁s󠄁 T󠄁e󠄁x󠄁t󠄁P󠄁r󠄁o󠄁v󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁,󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁 t󠄁h󠄁e󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁n󠄁 a󠄁
 s󠄁u󠄁p󠄁p󠄁o󠄁r󠄁t󠄁e󠄁d󠄁 f󠄁u󠄁l󠄁l󠄁s󠄁c󠄁r󠄁e󠄁e󠄁n󠄁 v󠄁i󠄁e󠄁w󠄁 a󠄁n󠄁d󠄁 r󠄁u󠄁n󠄁:󠄁
@@ -83,7 +85,7 @@ a󠄁v󠄁a󠄁i󠄁l󠄁a󠄁b󠄁l󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁i�
 a󠄁n󠄁s󠄁w󠄁e󠄁r󠄁 o󠄁r󠄁 r󠄁e󠄁a󠄁d󠄁 t󠄁h󠄁e󠄁 s󠄁y󠄁s󠄁t󠄁e󠄁m󠄁 c󠄁l󠄁i󠄁p󠄁b󠄁o󠄁a󠄁r󠄁d󠄁.󠄁 O󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 c󠄁o󠄁p󠄁y󠄁i󠄁n󠄁g󠄁 k󠄁e󠄁e󠄁p󠄁s󠄁 t󠄁h󠄁e󠄁 t󠄁e󠄁x󠄁t󠄁'󠄁s󠄁 e󠄁x󠄁i󠄁s󠄁t󠄁i󠄁n󠄁g󠄁
 m󠄁a󠄁r󠄁k󠄁s󠄁.󠄁 A󠄁 t󠄁e󠄁r󠄁m󠄁i󠄁n󠄁a󠄁l󠄁 O󠄁S󠄁C󠄁 5󠄁2󠄁 w󠄁r󠄁i󠄁t󠄁e󠄁 c󠄁a󠄁n󠄁 b󠄁e󠄁 r󠄁e󠄁p󠄁o󠄁r󠄁t󠄁e󠄁d󠄁 a󠄁s󠄁 c󠄁o󠄁p󠄁i󠄁e󠄁d󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 c󠄁o󠄁n󠄁f󠄁i󠄁r󠄁m󠄁i󠄁n󠄁g󠄁 r󠄁e󠄁c󠄁e󠄁i󠄁p󠄁t󠄁;󠄁
 i󠄁n󠄁t󠄁e󠄁r󠄁a󠄁c󠄁t󠄁i󠄁v󠄁e󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁i󠄁o󠄁n󠄁 a󠄁n󠄁d󠄁 t󠄁e󠄁r󠄁m󠄁i󠄁n󠄁a󠄁l󠄁 c󠄁l󠄁i󠄁p󠄁b󠄁o󠄁a󠄁r󠄁d󠄁 b󠄁e󠄁h󠄁a󠄁v󠄁i󠄁o󠄁r󠄁 n󠄁e󠄁e󠄁d󠄁 a󠄁 s󠄁e󠄁p󠄁a󠄁r󠄁a󠄁t󠄁e󠄁 t󠄁r󠄁i󠄁a󠄁l󠄁.󠄁
-D󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 a󠄁n󠄁d󠄁 C󠄁h󠄁r󠄁o󠄁n󠄁i󠄁c󠄁l󠄁e󠄁 o󠄁b󠄁s󠄁e󠄁r󠄁v󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 c󠄁a󠄁p󠄁t󠄁u󠄁r󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁i󠄁n󠄁u󠄁e󠄁 i󠄁n󠄁 e󠄁v󠄁e󠄁r󠄁y󠄁 c󠄁h󠄁a󠄁t󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁.󠄁
+C󠄁h󠄁r󠄁o󠄁n󠄁i󠄁c󠄁l󠄁e󠄁 o󠄁b󠄁s󠄁e󠄁r󠄁v󠄁a󠄁t󠄁i󠄁o󠄁n󠄁 c󠄁a󠄁p󠄁t󠄁u󠄁r󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁i󠄁n󠄁u󠄁e󠄁s󠄁 i󠄁n󠄁 e󠄁v󠄁e󠄁r󠄁y󠄁 m󠄁o󠄁d󠄁e󠄁.󠄁
 
 ## Install
 
@@ -121,9 +123,10 @@ A plugin loaded this way reads its options from `pluginConfigs` in your user set
 ## Update an installed plugin
 
 R󠄁e󠄁s󠄁t󠄁a󠄁r󠄁t󠄁i󠄁n󠄁g󠄁 C󠄁l󠄁a󠄁u󠄁d󠄁e󠄁 C󠄁o󠄁d󠄁e󠄁 r󠄁e󠄁l󠄁o󠄁a󠄁d󠄁s󠄁 i󠄁t󠄁s󠄁 i󠄁n󠄁s󠄁t󠄁a󠄁l󠄁l󠄁e󠄁d󠄁 p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 c󠄁o󠄁p󠄁y󠄁.󠄁 I󠄁t󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁 c󠄁o󠄁p󠄁y󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁s󠄁
-f󠄁r󠄁o󠄁m󠄁 a󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁o󠄁u󠄁t󠄁 i󠄁n󠄁t󠄁o󠄁 a󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁t󠄁p󠄁l󠄁a󠄁c󠄁e󠄁.󠄁 T󠄁h󠄁e󠄁 c󠄁h󠄁a󠄁t󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁r󠄁o󠄁l󠄁s󠄁 n󠄁e󠄁e󠄁d󠄁
-p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 0󠄁.󠄁1󠄁.󠄁5󠄁 a󠄁n󠄁d󠄁 T󠄁e󠄁x󠄁t󠄁P󠄁r󠄁o󠄁v󠄁 c󠄁o󠄁r󠄁e󠄁 0󠄁.󠄁1󠄁.󠄁7󠄁 o󠄁r󠄁 n󠄁e󠄁w󠄁e󠄁r󠄁;󠄁 u󠄁p󠄁d󠄁a󠄁t󠄁i󠄁n󠄁g󠄁 o󠄁n󠄁l󠄁y󠄁 o󠄁n󠄁e󠄁 c󠄁a󠄁n󠄁 l󠄁e󠄁a󠄁v󠄁e󠄁 t󠄁h󠄁e󠄁 n󠄁e󠄁w󠄁
-c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁s󠄁 u󠄁n󠄁a󠄁v󠄁a󠄁i󠄁l󠄁a󠄁b󠄁l󠄁e󠄁 o󠄁r󠄁 t󠄁h󠄁e󠄁 b󠄁r󠄁i󠄁d󠄁g󠄁e󠄁 i󠄁n󠄁c󠄁o󠄁m󠄁p󠄁a󠄁t󠄁i󠄁b󠄁l󠄁e󠄁.󠄁
+f󠄁r󠄁o󠄁m󠄁 a󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁o󠄁u󠄁t󠄁 i󠄁n󠄁t󠄁o󠄁 a󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁t󠄁p󠄁l󠄁a󠄁c󠄁e󠄁.󠄁 P󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 0󠄁.󠄁1󠄁.󠄁7󠄁 f󠄁i󠄁x󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁
+`prepare_edit` b󠄁r󠄁i󠄁d󠄁g󠄁e󠄁 f󠄁o󠄁r󠄁 c󠄁o󠄁r󠄁e󠄁 0󠄁.󠄁3󠄁.󠄁1󠄁 a󠄁n󠄁d󠄁 n󠄁e󠄁w󠄁e󠄁r󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 p󠄁a󠄁s󠄁s󠄁i󠄁n󠄁g󠄁 u󠄁n󠄁s󠄁u󠄁p󠄁p󠄁o󠄁r󠄁t󠄁e󠄁d󠄁 m󠄁o󠄁d󠄁e󠄁
+a󠄁r󠄁g󠄁u󠄁m󠄁e󠄁n󠄁t󠄁s󠄁.󠄁 T󠄁o󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁 u󠄁n󠄁c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁d󠄁 w󠄁o󠄁r󠄁d󠄁s󠄁 b󠄁e󠄁t󠄁w󠄁e󠄁e󠄁n󠄁 d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 c󠄁o󠄁r󠄁r󠄁e󠄁c󠄁t󠄁i󠄁o󠄁n󠄁s󠄁,󠄁 a󠄁l󠄁s󠄁o󠄁 u󠄁p󠄁d󠄁a󠄁t󠄁e󠄁
+t󠄁o󠄁 a󠄁 c󠄁o󠄁r󠄁e󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁o󠄁u󠄁t󠄁 c󠄁o󠄁n󠄁t󠄁a󠄁i󠄁n󠄁i󠄁n󠄁g󠄁 t󠄁h󠄁e󠄁 w󠄁h󠄁o󠄁l󠄁e󠄁-󠄁w󠄁o󠄁r󠄁d󠄁 a󠄁l󠄁i󠄁g󠄁n󠄁m󠄁e󠄁n󠄁t󠄁 f󠄁i󠄁x󠄁.󠄁
 
 ### Refresh a marketplace installation
 
@@ -182,14 +185,16 @@ C󠄁o󠄁d󠄁e󠄁 a󠄁n󠄁d󠄁 r󠄁u󠄁n󠄁:󠄁
 /textprov prose
 ```
 
-F󠄁o󠄁r󠄁 t󠄁h󠄁i󠄁s󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁 b󠄁u󠄁i󠄁l󠄁d󠄁,󠄁 e󠄁x󠄁p󠄁e󠄁c󠄁t󠄁 p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 0󠄁.󠄁1󠄁.󠄁5󠄁 a󠄁n󠄁d󠄁 a󠄁 c󠄁o󠄁r󠄁e󠄁 v󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁 o󠄁f󠄁 a󠄁t󠄁 l󠄁e󠄁a󠄁s󠄁t󠄁 0󠄁.󠄁1󠄁.󠄁7󠄁.󠄁
-S󠄁t󠄁a󠄁t󠄁u󠄁s󠄁 r󠄁e󠄁p󠄁o󠄁r󠄁t󠄁s󠄁 t󠄁h󠄁e󠄁 c󠄁o󠄁r󠄁e󠄁 m󠄁o󠄁d󠄁u󠄁l󠄁e󠄁 p󠄁a󠄁t󠄁h󠄁 s󠄁o󠄁 y󠄁o󠄁u󠄁 c󠄁a󠄁n󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁 w󠄁h󠄁i󠄁c󠄁h󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁o󠄁u󠄁t󠄁 o󠄁r󠄁 i󠄁n󠄁s󠄁t󠄁a󠄁l󠄁l󠄁e󠄁d󠄁
-p󠄁a󠄁c󠄁k󠄁a󠄁g󠄁e󠄁 i󠄁s󠄁 a󠄁c󠄁t󠄁u󠄁a󠄁l󠄁l󠄁y󠄁 l󠄁o󠄁a󠄁d󠄁e󠄁d󠄁.󠄁 I󠄁f󠄁 t󠄁h󠄁e󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁 i󠄁s󠄁 s󠄁t󠄁i󠄁l󠄁l󠄁 u󠄁n󠄁k󠄁n󠄁o󠄁w󠄁n󠄁,󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁 t󠄁h󠄁e󠄁 i󠄁n󠄁s󠄁t󠄁a󠄁l󠄁l󠄁e󠄁d󠄁
-v󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁 a󠄁n󠄁d󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁t󠄁p󠄁l󠄁a󠄁c󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁n󠄁t󠄁s󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁 r󠄁e󠄁s󠄁t󠄁a󠄁r󠄁t󠄁i󠄁n󠄁g󠄁 a󠄁g󠄁a󠄁i󠄁n󠄁.󠄁
+F󠄁o󠄁r󠄁 t󠄁h󠄁i󠄁s󠄁 d󠄁e󠄁v󠄁e󠄁l󠄁o󠄁p󠄁m󠄁e󠄁n󠄁t󠄁 b󠄁u󠄁i󠄁l󠄁d󠄁,󠄁 e󠄁x󠄁p󠄁e󠄁c󠄁t󠄁 p󠄁l󠄁u󠄁g󠄁i󠄁n󠄁 0󠄁.󠄁1󠄁.󠄁7󠄁 a󠄁n󠄁d󠄁 c󠄁o󠄁r󠄁e󠄁 0󠄁.󠄁3󠄁.󠄁1󠄁 o󠄁r󠄁 n󠄁e󠄁w󠄁e󠄁r󠄁.󠄁
+F󠄁o󠄁r󠄁 t󠄁h󠄁e󠄁 a󠄁l󠄁i󠄁g󠄁n󠄁m󠄁e󠄁n󠄁t󠄁 f󠄁i󠄁x󠄁,󠄁 u󠄁s󠄁e󠄁 t󠄁h󠄁e󠄁 p󠄁a󠄁t󠄁c󠄁h󠄁e󠄁d󠄁 c󠄁o󠄁r󠄁e󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁o󠄁u󠄁t󠄁;󠄁 t󠄁h󠄁e󠄁 v󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁 a󠄁l󠄁o󠄁n󠄁e󠄁 d󠄁o󠄁e󠄁s󠄁 n󠄁o󠄁t󠄁
+i󠄁d󠄁e󠄁n󠄁t󠄁i󠄁f󠄁y󠄁 t󠄁h󠄁a󠄁t󠄁 s󠄁o󠄁u󠄁r󠄁c󠄁e󠄁 c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁.󠄁 S󠄁t󠄁a󠄁t󠄁u󠄁s󠄁 r󠄁e󠄁p󠄁o󠄁r󠄁t󠄁s󠄁 t󠄁h󠄁e󠄁 c󠄁o󠄁r󠄁e󠄁 m󠄁o󠄁d󠄁u󠄁l󠄁e󠄁 p󠄁a󠄁t󠄁h󠄁 s󠄁o󠄁 y󠄁o󠄁u󠄁 c󠄁a󠄁n󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁
+w󠄁h󠄁i󠄁c󠄁h󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁o󠄁u󠄁t󠄁 o󠄁r󠄁 i󠄁n󠄁s󠄁t󠄁a󠄁l󠄁l󠄁e󠄁d󠄁 p󠄁a󠄁c󠄁k󠄁a󠄁g󠄁e󠄁 i󠄁s󠄁 a󠄁c󠄁t󠄁u󠄁a󠄁l󠄁l󠄁y󠄁 l󠄁o󠄁a󠄁d󠄁e󠄁d󠄁.󠄁 I󠄁f󠄁 t󠄁h󠄁e󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁 i󠄁s󠄁 s󠄁t󠄁i󠄁l󠄁l󠄁
+u󠄁n󠄁k󠄁n󠄁o󠄁w󠄁n󠄁,󠄁 c󠄁h󠄁e󠄁c󠄁k󠄁 t󠄁h󠄁e󠄁 i󠄁n󠄁s󠄁t󠄁a󠄁l󠄁l󠄁e󠄁d󠄁 v󠄁e󠄁r󠄁s󠄁i󠄁o󠄁n󠄁 a󠄁n󠄁d󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁t󠄁p󠄁l󠄁a󠄁c󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁e󠄁n󠄁t󠄁s󠄁 b󠄁e󠄁f󠄁o󠄁r󠄁e󠄁
+r󠄁e󠄁s󠄁t󠄁a󠄁r󠄁t󠄁i󠄁n󠄁g󠄁 a󠄁g󠄁a󠄁i󠄁n󠄁.󠄁
 
 ## Setup
 
-The plugin requires TextProv Python core 0󠄁.󠄁1󠄁.󠄁7󠄁 or newer with the public chronicle
+The plugin requires TextProv Python core 0󠄁.󠄁3󠄁.󠄁1󠄁 or newer with the public chronicle
 APIs for status, sessions, attributes, comparison, claim transfer and e󠄁x󠄁p󠄁o󠄁r󠄁t󠄁,󠄁 p󠄁l󠄁u󠄁s󠄁
 t󠄁h󠄁e󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 a󠄁n󠄁d󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁r󠄁-󠄁a󠄁w󠄁a󠄁r󠄁e󠄁 d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 e󠄁d󠄁i󠄁t󠄁i󠄁n󠄁g󠄁 A󠄁P󠄁I󠄁s󠄁.󠄁
 This development version is local; point `textprov_python` at the matching core
@@ -202,7 +207,7 @@ Claude Code asks for these options; they are also rows in `/config`:
 | `textprov_python` | The `python/` directory of a textprov checkout, the one that holds `textprov/chronicle.py`. Leave empty to use an installed `textprov` package. |
 | `python` | Interpreter that runs the bridge. Default `python3`, needs 3.9 or newer; the core uses only the standard library. |
 | `data_dir` | Where per-project chronicle databases live. Default `~/.claude/plugins/data/textprov`. |
-| `chat_marks` | D󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 c󠄁h󠄁a󠄁t󠄁 s󠄁c󠄁o󠄁p󠄁e󠄁:󠄁 `prose` (󠄁d󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁)󠄁,󠄁 `all`,󠄁 o󠄁r󠄁 `off`.󠄁 |
+| `chat_marks` | D󠄁e󠄁f󠄁a󠄁u󠄁l󠄁t󠄁 m󠄁o󠄁d󠄁e󠄁:󠄁 `prose` (󠄁d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁s󠄁 o󠄁n󠄁l󠄁y󠄁)󠄁,󠄁 `all`,󠄁 `none`,󠄁 o󠄁r󠄁 `remove`;󠄁 l󠄁e󠄁g󠄁a󠄁c󠄁y󠄁 `off` a󠄁l󠄁i󠄁a󠄁s󠄁e󠄁s󠄁 `none`.󠄁 |
 
 Run `/textprov status` once: it reports the interpreter, whether the core and its
 `chronicle` module were found, and the database path for this project.

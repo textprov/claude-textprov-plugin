@@ -1,8 +1,8 @@
 {
   "name": "textprov",
   "displayName": "TextProv attribution chronicle",
-  "version": "0.1.5",
-  "description": "Marks chat prose by default, supports scope and plain-copy controls, preserves provenance during prose edits, and records observations in the shared TextProv chronicle.",
+  "version": "0.1.7",
+  "description": "Marks file/document prose by default, supports all/prose/none/remove modes, and records observations in the shared TextProv chronicle.",
   "author": { "name": "TextProv contributors", "url": "https://textprov.org" },
   "homepage": "https://github.com/textprov/textprov",
   "repository": "https://github.com/textprov/claude-textprov-plugin",
@@ -28,11 +28,13 @@
     },
     "chat_marks": {
       "type": "string",
-      "title": "Chat marks",
-      "description": "Mark prose by default; all also marks code and commands. Off stops adding chat marks and preserves existing marks.",
+      "title": "TextProv mode",
+      "description": "Prose marks file/document prose only; all includes chat; none leaves text as supplied; remove strips existing marks from processed chat and file output. Off aliases none.",
       "options": [
         "prose",
         "all",
+        "none",
+        "remove",
         "off"
       ],
       "default": "prose"
