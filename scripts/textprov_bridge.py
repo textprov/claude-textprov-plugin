@@ -178,12 +178,20 @@ def main(argv=None):
             raise ValueError("request must be an object")
         operation = request.pop("operation", None)
         if operation == "prepare_edit":
+            mode = marking_mode(request.get("marking_mode", "prose"))
+            if mode == "none":
+                # Disabled mode has the same literal tool-input semantics as
+                # Write: no anchor translation, source carry or core loading.
+                result = {name: request[name] for name in ("old_string", "new_string")}
+                if any(not isinstance(value, str) for value in result.values()):
+                    raise ValueError("edit strings must be strings")
+                print(json.dumps({"result": result}, ensure_ascii=False))
+                return 0
             textprov, _ = load_core(args.textprov_python)
             from textprov.editing import rewrite_edit
-            mode = marking_mode(request.get("marking_mode", "prose"))
             # A protected profile suppresses new labels while retaining the
             # core's mark-insensitive anchors and whole-grapheme safeguards.
-            options = {"profile": lambda text: [True] * len(text)} if mode in ("none", "remove") else {}
+            options = {"profile": lambda text: [True] * len(text)} if mode == "remove" else {}
             prepared = rewrite_edit(request["raw"], request["old_string"], request["new_string"],
                                     replace_all=request.get("replace_all", False), shingles=set(),
                                     preserve_new_marks=True, **options)

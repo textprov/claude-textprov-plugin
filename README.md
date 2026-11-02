@@ -68,6 +68,11 @@ F󠄁o󠄁r󠄁 W󠄁r󠄁i󠄁t󠄁e󠄁,󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁e󠄁 c�
 r󠄁e󠄁p󠄁l󠄁a󠄁c󠄁e󠄁m󠄁e󠄁n󠄁t󠄁 a󠄁n󠄁d󠄁 p󠄁r󠄁e󠄁s󠄁e󠄁r󠄁v󠄁e󠄁s󠄁 t󠄁e󠄁x󠄁t󠄁 o󠄁u󠄁t󠄁s󠄁i󠄁d󠄁e󠄁 t󠄁h󠄁e󠄁 e󠄁d󠄁i󠄁t󠄁e󠄁d󠄁 r󠄁a󠄁n󠄁g󠄁e󠄁;󠄁 a󠄁n󠄁c󠄁h󠄁o󠄁r󠄁s󠄁 r󠄁e󠄁m󠄁a󠄁i󠄁n󠄁
 m󠄁a󠄁r󠄁k󠄁e󠄁r󠄁-󠄁a󠄁w󠄁a󠄁r󠄁e󠄁.󠄁 N󠄁o󠄁n󠄁e󠄁 l󠄁e󠄁a󠄁v󠄁e󠄁s󠄁 t󠄁o󠄁o󠄁l󠄁 o󠄁u󠄁t󠄁p󠄁u󠄁t󠄁 a󠄁s󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁.󠄁 C󠄁a󠄁p󠄁t󠄁u󠄁r󠄁e󠄁 c󠄁o󠄁n󠄁t󠄁i󠄁n󠄁u󠄁e󠄁s󠄁 i󠄁n󠄁 a󠄁l󠄁l󠄁 m󠄁o󠄁d󠄁e󠄁s󠄁.󠄁
 
+`none` a󠄁n󠄁d󠄁 i󠄁t󠄁s󠄁 `off` a󠄁l󠄁i󠄁a󠄁s󠄁 f󠄁o󠄁r󠄁w󠄁a󠄁r󠄁d󠄁 W󠄁r󠄁i󠄁t󠄁e󠄁 a󠄁n󠄁d󠄁 E󠄁d󠄁i󠄁t󠄁 a󠄁r󠄁g󠄁u󠄁m󠄁e󠄁n󠄁t󠄁s󠄁 u󠄁n󠄁c󠄁h󠄁a󠄁n󠄁g󠄁e󠄁d󠄁.󠄁 E󠄁d󠄁i󠄁t󠄁 u󠄁s󠄁e󠄁s󠄁
+t󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁'󠄁s󠄁 o󠄁r󠄁d󠄁i󠄁n󠄁a󠄁r󠄁y󠄁 l󠄁i󠄁t󠄁e󠄁r󠄁a󠄁l󠄁 m󠄁a󠄁t󠄁c󠄁h󠄁i󠄁n󠄁g󠄁,󠄁 s󠄁o󠄁 `old_string` m󠄁u󠄁s󠄁t󠄁 i󠄁n󠄁c󠄁l󠄁u󠄁d󠄁e󠄁 t󠄁h󠄁e󠄁 s󠄁o󠄁u󠄁r󠄁c󠄁e󠄁
+m󠄁a󠄁r󠄁k󠄁s󠄁 w󠄁h󠄁e󠄁n󠄁 t󠄁h󠄁e󠄁 h󠄁o󠄁s󠄁t󠄁 r󠄁e󠄁q󠄁u󠄁i󠄁r󠄁e󠄁s󠄁 t󠄁h󠄁e󠄁m󠄁.󠄁 T󠄁h󠄁i󠄁s󠄁 k󠄁e󠄁e󠄁p󠄁s󠄁 t󠄁h󠄁e󠄁 s󠄁u󠄁p󠄁p󠄁l󠄁i󠄁e󠄁d󠄁 a󠄁r󠄁g󠄁u󠄁m󠄁e󠄁n󠄁t󠄁s󠄁 f󠄁r󠄁e󠄁e󠄁 o󠄁f󠄁
+a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 m󠄁a󠄁r󠄁k󠄁 a󠄁d󠄁d󠄁i󠄁t󠄁i󠄁o󠄁n󠄁s󠄁 o󠄁r󠄁 r󠄁e󠄁m󠄁o󠄁v󠄁a󠄁l󠄁s󠄁.󠄁
+
 T󠄁o󠄁 c󠄁o󠄁p󠄁y󠄁 a󠄁n󠄁 a󠄁l󠄁r󠄁e󠄁a󠄁d󠄁y󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁d󠄁 c󠄁o󠄁m󠄁m󠄁a󠄁n󠄁d󠄁 w󠄁i󠄁t󠄁h󠄁o󠄁u󠄁t󠄁 i󠄁t󠄁s󠄁 T󠄁e󠄁x󠄁t󠄁P󠄁r󠄁o󠄁v󠄁 m󠄁a󠄁r󠄁k󠄁s󠄁,󠄁 s󠄁e󠄁l󠄁e󠄁c󠄁t󠄁 t󠄁h󠄁e󠄁 t󠄁e󠄁x󠄁t󠄁 i󠄁n󠄁 a󠄁
 s󠄁u󠄁p󠄁p󠄁o󠄁r󠄁t󠄁e󠄁d󠄁 f󠄁u󠄁l󠄁l󠄁s󠄁c󠄁r󠄁e󠄁e󠄁n󠄁 v󠄁i󠄁e󠄁w󠄁 a󠄁n󠄁d󠄁 r󠄁u󠄁n󠄁:󠄁
 
@@ -189,7 +194,7 @@ r󠄁e󠄁s󠄁t󠄁a󠄁r󠄁t󠄁i󠄁n󠄁g󠄁 a󠄁g󠄁a󠄁i󠄁n󠄁.�
 
 ## Setup
 
-The plugin requires TextProv Python core 0󠄁.󠄁1󠄁.󠄁7󠄁 or newer with the public chronicle
+The plugin requires TextProv Python core 0󠄁.󠄁3󠄁.󠄁1󠄁 or newer with the public chronicle
 APIs for status, sessions, attributes, comparison, claim transfer and e󠄁x󠄁p󠄁o󠄁r󠄁t󠄁,󠄁 p󠄁l󠄁u󠄁s󠄁
 t󠄁h󠄁e󠄁 l󠄁o󠄁c󠄁a󠄁l󠄁 a󠄁u󠄁t󠄁o󠄁m󠄁a󠄁t󠄁i󠄁c󠄁 m󠄁a󠄁r󠄁k󠄁i󠄁n󠄁g󠄁 a󠄁n󠄁d󠄁 m󠄁a󠄁r󠄁k󠄁e󠄁r󠄁-󠄁a󠄁w󠄁a󠄁r󠄁e󠄁 d󠄁o󠄁c󠄁u󠄁m󠄁e󠄁n󠄁t󠄁 e󠄁d󠄁i󠄁t󠄁i󠄁n󠄁g󠄁 A󠄁P󠄁I󠄁s󠄁.󠄁
 This development version is local; point `textprov_python` at the matching core

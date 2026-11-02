@@ -18,6 +18,8 @@ type Fixture = {
   store: Record<string, unknown>
   /** Command names the host refuses to register, with the refusal. */
   tools?: Request[]
+  readFile?: () => string
+  registrations?: Request[]
   marker?: (request: Request) => unknown
   refused?: Record<string, string>
   selection?: { text: string; requestId?: string }
@@ -35,6 +37,7 @@ function engine(
   let minted = 0
   on('session.start', (_, e) => ({ cwd: e.cwd }))
   on('command.register', (_, e) => {
+    fixture.registrations?.push(e)
     const reason = fixture.refused?.[e.name]
     return reason === undefined ? { value: { command: e.name } } : { deny: reason }
   })
@@ -42,7 +45,7 @@ function engine(
   on('session.root', () => ({ value: '/project' }))
   on('session.version', () => ({ value: { version: '0.0.0-test' } }))
   on('fs.exists', () => ({ value: false }))
-  on('fs.read', () => ({ value: 'old' }))
+  on('fs.read', () => ({ value: fixture.readFile?.() ?? 'old' }))
   on('ui.status', () => ({ value: undefined }))
   on('ui.selection', () => ({ value: fixture.selection }))
   on('ui.copy', (_, e) => {
@@ -636,10 +639,12 @@ test('a namespace initialization failure preserves earlier persisted failures', 
 
 test('the plugin registers /textprov and reports its canonical name in help and status', async ($, on) => {
   const f = fixture()
+  f.registrations = []
   engine(on, f)
   await $.session.start(SESSION)
 
   const help = await $.command.run({ command: 'textprov', args: 'help', origin: ORIGIN, presentation: PRESENTATION })
+  expect(f.registrations![0]!.argumentHint).toContain('all|prose|none|remove|off')
   expect(help.text).toContain('usage: /textprov claim')
   expect(help.text).toContain('IDs may be unambiguous prefixes of observation IDs listed by /textprov.')
   const status = await $.command.run({ command: 'textprov', args: 'status', origin: ORIGIN, presentation: PRESENTATION })
@@ -894,3 +899,23 @@ test('none leaves Write input untouched and remove strips processed file output'
   expect(f.tools![1]!.content).toBe('Supplied file text')
   expect(f.requests.find(request => request.operation === 'strip_marks')!.text).toBe('Supplied󠄁 file text')
 })
+
+
+for (const mode of ['none', 'off'] as const) {
+  test(`${mode} forwards Edit arguments unchanged without reading or preparing them`, { options: { chat_marks: mode } }, async ($, on) => {
+    const f = fixture()
+    f.tools = []
+    f.readFile = () => { throw new Error('disabled marking must not read the file') }
+    f.marker = request => { if (request.operation === 'prepare_edit') throw new Error('disabled marking must not prepare edits'); return undefined }
+    engine(on, f)
+    await $.session.start(SESSION)
+    const old_string = 'W\u{E0100}ords'
+    const new_string = 'W\u{E0101}ords fresh'
+    await $.tool.call({ tool: 'Edit', file_path: '/project/guide.md', old_string, new_string, tool_use_id: 'disabled-edit' })
+    expect(f.tools!.length).toBe(1)
+    expect(f.tools![0]!.old_string).toBe(old_string)
+    expect(f.tools![0]!.new_string).toBe(new_string)
+    expect(f.requests.filter(request => request.operation === 'prepare_edit')).toEqual([])
+    expect(observed(f.requests).map(request => request.event_kind)).toEqual(['tool_call', 'tool_anchor', 'tool_result'])
+  })
+}

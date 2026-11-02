@@ -615,7 +615,7 @@ async function serveCommand($: EngineInterface): Promise<void> {
     await $.command.register({
       name: COMMAND,
       description: 'TextProv: control chat marks, copy plain text, inspect and manage attribution',
-      argumentHint: '[prose|all|off [--next]|copy --plain|list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
+      argumentHint: '[all|prose|none|remove|off [--next]|copy --plain|list|status|inspect <id>|match <src> <dst>|claim <id> <start> <end> <VoiceN>|transfer <JSON>|resolve <JSON>|export <JSON>]',
     })
     await update($, command, () => COMMAND)
   } catch (error) {
@@ -790,6 +790,7 @@ export const register: Register = (on, options) => {
     let old_string = e.old_string
     let new_string = e.new_string
     const mode = await assistantScope($, options, e.agentId)
+    if (mode === 'none' || mode === 'off') return captureTool($, options, e, new_string, e.file_path, () => next(e), old_string, { replace_all: e.replace_all ?? false })
     if (PROSE.test(e.file_path) || mode === 'remove') {
       let raw: string
       try { raw = await $.fs.read(e.file_path) }

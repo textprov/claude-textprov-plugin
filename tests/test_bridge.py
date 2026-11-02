@@ -122,6 +122,26 @@ class BridgeTest(unittest.TestCase):
                                  "Before\nOld words\nAfter\n".replace(prepared["old_string"], prepared["new_string"]))
         self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
 
+    def test_disabled_exact_edits_preserve_supplied_bytes_without_loading_core(self):
+        stub = Path(self.temp.name) / "disabled-core"
+        (stub / "textprov").mkdir(parents=True)
+        (stub / "textprov" / "__init__.py").write_text("raise AssertionError('disabled edit loaded core')\n")
+        argv = [sys.executable, str(BRIDGE), "--root", str(self.root), "--data-dir", str(self.data),
+                "--textprov-python", str(stub)]
+        human = "W\U000e0100ords"
+        ai = "W\U000e0101ords"
+        for mode in ("none", "off"):
+            for anchor, supplied in ((human, "Words fresh"), (human, ai + " fresh"),
+                                     ("Words", ai + " fresh"), ("e", "e\u0301")):
+                with self.subTest(mode=mode, anchor=anchor, supplied=supplied):
+                    request = dict(operation="prepare_edit", raw=human, old_string=anchor,
+                                   new_string=supplied, marking_mode=mode)
+                    process = subprocess.run(argv, input=json.dumps(request), text=True, capture_output=True)
+                    self.assertEqual(process.returncode, 0, process.stderr)
+                    self.assertEqual(json.loads(process.stdout)["result"],
+                                     {"old_string": anchor, "new_string": supplied})
+        self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
+
     def test_disabled_and_remove_modes_translate_chat_parts_and_new_documents(self):
         marked = self.ok(dict(operation="mark_chat", text="Supplied", role="assistant", scope="all"))
         supplied = marked + " fresh"
@@ -415,7 +435,7 @@ class Chronicle:
                 result = self.ok(dict(operation="mark_document_edit", old_text="Old", new_text=marked + " fresh", mode=mode))
                 self.assertEqual(expected, result)
                 raw = "Outside\n" + marked + "\n"
-                prepared = self.ok(dict(operation="prepare_edit", raw=raw, old_string="Supplied", new_string=marked + " fresh", marking_mode=mode))
+                prepared = self.ok(dict(operation="prepare_edit", raw=raw, old_string=marked if mode == "none" else "Supplied", new_string=marked + " fresh", marking_mode=mode))
                 self.assertEqual("Outside\n" + expected + "\n", raw.replace(prepared["old_string"], prepared["new_string"]))
         self.assertFalse(any(self.data.glob("**/chronicle.sqlite")))
 
